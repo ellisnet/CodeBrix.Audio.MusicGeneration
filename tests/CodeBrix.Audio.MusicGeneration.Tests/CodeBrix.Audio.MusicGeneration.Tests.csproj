@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeBrix.Audio.MusicGeneration\CodeBrix.Audio.MusicGeneration.csproj" />
+  </ItemGroup>
+
+  <!--
+    The test project MAY reference CodeBrix.Audio.ModestSynth directly - it is a consumer, and a
+    consumer is the one who registers an instrument library. The SHIPPED library may not grow a
+    fourth dependency; this project is not the shipped library.
+  -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.264.61" />
+  </ItemGroup>
+
+  <!--
+    THE OPUS PACKAGE BELONGS TO THIS PROJECT AND TO NO OTHER. An offline render reaches ".opus"
+    through CodeBrix.Audio's writer registry, and the only way to prove that is to be an
+    application that references the package carrying the encoder and calls its Register(). The
+    SHIPPED library must never name it: format support is a REGISTRATION question, not a
+    dependency question.
+  -->
+  <ItemGroup>
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.264.95" />
+  </ItemGroup>
+
+  <!--
+    THE AUDITION FILES. Thirty-two pieces of ABC notation the MuPT model wrote for the listening
+    sessions this library's taste rests on, each with the model's raw text beside it. They are the
+    fence the incremental slice path is held to: converting a file piece by piece must produce
+    exactly what converting the finished text produces. THIRD-PARTY-NOTICES.txt says where they
+    came from.
+  -->
+  <ItemGroup>
+    <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+  </ItemGroup>
+
+</Project>

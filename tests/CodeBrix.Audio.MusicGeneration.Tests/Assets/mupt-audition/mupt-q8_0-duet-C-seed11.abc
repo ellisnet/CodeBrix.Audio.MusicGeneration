@@ -1,0 +1,10 @@
+X:1
+T:duet-C (MuPT 190M q8_0, seed 11)
+L:1/8
+Q:1/4=96
+M:4/4
+K:C
+V:1
+"C" c2 e2 g2 e2 | "G" d2 g2 b2 g2 | "C" c2 g2 e2 g2 | "G" d2 g2 b2 g2 | c'2 ba g2 e2 | d2 g2 b2 g2 | c'2 ba g2 e2 | d2 g2 b2 g2 | [M:5/4]"C" c'b z g ec z g ec | c'b z g dB z g dB | c'b z g ec z g ec | c'b z g dB z g dB | c'b z g ec z g ec | c'b z g dB z g dB | [M:3/4] c'b z g ec |
+V:2
+C,4 G,4 | G,4 D4 | C4 G4 | G,4 D4 | C4 G4 | G,4 D4 | C4 G4 | G,4 D4 | [M:5/4] C4 G4 z2 | G,4 D4 z2 | C4 G4 z2 | G,4 D4 z2 | C4 G4 z2 | G,4 D4 z2 | [M:

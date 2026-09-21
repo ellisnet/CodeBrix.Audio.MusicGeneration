@@ -1,0 +1,107 @@
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+CodeBrix.Audio.MusicGeneration generates music as MIDI events, from a piece it
+carries or from a music model an application registers, and plays or renders
+those events through CodeBrix.Audio. CodeBrix.Audio.MusicGeneration does not
+incorporate any third-party source code into its own assemblies.
+
+Jeremy Ellis and contributors license the CodeBrix.Audio.MusicGeneration project
+to you under the terms set forth in the LICENSE file, which is located at
+the root of this repository.
+
+If you have any questions about any third-party code or services referenced
+here, or if you believe that any third-party code has been included in
+CodeBrix.Audio.MusicGeneration in error, please open a new issue at:
+https://github.com/ellisnet/CodeBrix.Audio.MusicGeneration/issues
+
+================================================================================
+
+THE MUSIC EMBEDDED IN THIS PACKAGE
+
+Four small pieces of music ship inside the assembly, in
+src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic:
+
+    skytnt-fp32-dense-long-seed20260918-2000ev.mid
+    skytnt-fp32-ordinary.mid
+    mupt-q8_0-duet-Am-waltz-seed29.abc
+    mupt-q8_0-air-Dmix-seed11.abc
+
+THESE ARE NOT THIRD-PARTY RECORDINGS OR TRANSCRIPTIONS, and no third-party score
+or performance is included in them. Every one is the OUTPUT of a model that was
+run locally by the owner of this repository. The models are published under the
+Apache License 2.0 - skytnt/midi-model-tv2o-medium for the two MIDI pieces, and
+MuPT-v1-8192-190M for the two ABC tunes - and nothing of the models themselves
+is here: these files are a few kilobytes of notes each.
+
+They are listed in this file deliberately, rather than left unmentioned, so that
+the question "where did the music in the package come from?" has an answer in
+the one place the answer is looked for.
+
+The recipe for the default MIDI piece, which was generated for this package:
+CodeBrix.Ollama.ModelRunner, the SkyTNT midi-model-tv2o-medium FP32 bundle,
+eight inference threads, seed 20260918, instruments 0, 40, 73, 24 and 48, drum
+kit 0, 140 beats per minute, prompt events included, 2,000 events. The other
+three came from listening sessions run the same way against the same two models.
+
+================================================================================
+
+THE PROMPTS IN THE PRESETS
+
+src/CodeBrix.Audio.MusicGeneration/Presets/MuPTPresets.cs carries eight short
+prompts in ABC notation - a header and, in most of them, an opening bar or two.
+THEY ARE THE PROJECT'S OWN TEXT, written by the owner of this repository for the
+listening sessions that settled this library's taste, and they are not quoted
+from any tune, collection or publication. The only one that is not is the reel
+in G minor, whose header and opening are the example printed on the model card
+of MuPT-v1-8192-190M (https://huggingface.co/m-a-p/MuPT-v1-8192-190M), which is
+published under the Apache License, Version 2.0 - a few characters of example
+notation, kept exactly as the publisher wrote it so that the model is prompted
+the way its own card prompts it.
+
+The music those prompts produce is the model's, and none of it is here: a preset
+is a request, not a recording.
+
+================================================================================
+
+THE MuPT POST-PROCESSING, PORTED
+
+src/CodeBrix.Audio.MusicGeneration/Models/Internal/MuPTSmtAbc.cs is a port of the
+post-processing published on the model card of MuPT-v1-8192-190M
+(https://huggingface.co/m-a-p/MuPT-v1-8192-190M, revision
+bf8f270d11683f65aa83ccebc2e756b782b795d8), which is licensed under the Apache
+License, Version 2.0. The model merges several parts into one line when it is
+trained, and that code is how the merged form is separated back into standard
+ABC notation voices; porting it rather than inventing something else is what
+makes the notation this library reads the notation the publisher intended.
+
+The file carries a "//was previously:" comment naming the upstream file and
+revision, as every ported file in the CodeBrix family does, and its own
+documentation records where the port deliberately differs.
+
+A copy of the Apache License, Version 2.0 is available at
+http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+
+THE AUDITION FILES IN THE TEST PROJECT
+
+tests/CodeBrix.Audio.MusicGeneration.Tests/Assets/mupt-audition holds thirty-two
+tunes in ABC notation, each with the model's raw text beside it:
+
+    mupt-q4_k_m-<piece>-seed<n>.abc  /  .raw.txt
+    mupt-q8_0-<piece>-seed<n>.abc    /  .raw.txt
+
+THESE ARE NOT THIRD-PARTY TRANSCRIPTIONS, and no third-party score is included
+in them. Every one is the OUTPUT of the MuPT-v1-8192-190M model, published under
+the Apache License 2.0, run locally by the owner of this repository in the
+listening sessions that settled this library's taste. They ship with the TESTS
+and are not in the package.
+
+They are here because the incremental path that turns the model's text into
+music while it is still being written is held to them: converting one of these
+files piece by piece must produce exactly the events that converting the whole
+of it produces.
+
+================================================================================
+
+END OF THIRD-PARTY SOFTWARE NOTICES AND INFORMATION

@@ -1,0 +1,1 @@
+X:1<n>L:1/8<n>Q:1/4=150<n>M:4/4<n>K:G<n>|:"G" G>A B>c d>B G>B | <|> <|> "D7" A>B c>d e>f g>e | <|> <|> "G" d>B G>B"D7" A>G F>E | <|> <|> "G" D>G F>E D4 :: <|> <|> <n>"G" D>G B>c d>B G>D | <|> <|> "C" E>c B>A"D7" G>A B>c | <|> <|> "G" d>B G>B"D7" A>G F>E | <|> <|> "G" D>G F>E D4 :| <|>
