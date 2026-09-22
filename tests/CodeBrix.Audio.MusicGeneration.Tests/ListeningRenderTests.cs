@@ -38,8 +38,9 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 ///   -class "CodeBrix.Audio.MusicGeneration.Tests.ListeningRenderTests"
 /// </code>
 /// <para>
-/// IT IS ONE TEST ON PURPOSE. Every file goes in one folder under one index, and an index written
-/// by three tests running in an order nobody chose is not an index.
+/// THE FULL LISTENING SET IS ONE TEST ON PURPOSE. Every file goes in one folder under one index,
+/// and an index written by several tests running in an order nobody chose is not an index. The
+/// separately opted-in short-pass checks write their own folders and indexes.
 /// </para>
 /// </remarks>
 [Collection("MusicGeneratorRegistry")]
@@ -47,6 +48,15 @@ public class ListeningRenderTests : IDisposable
 {
     /// <summary>The variable that opts in to writing the listening set.</summary>
     public const string VariableName = "CODEBRIX_AUDIO_RUN_LISTENING_RENDERS";
+
+    /// <summary>The variable that opts in to the short-pass SkyTNT comparisons.</summary>
+    public const string ShortPassVariableName = "CODEBRIX_AUDIO_RUN_60_EVENT_RENDER";
+
+    /// <summary>The variable that opts in to the middle-pass SkyTNT comparisons.</summary>
+    public const string MiddlePassVariableName = "CODEBRIX_AUDIO_RUN_120_EVENT_RENDER";
+
+    /// <summary>The variable that opts in to timing the 300-event Club Arrangement render.</summary>
+    public const string ThreeHundredPassVariableName = "CODEBRIX_AUDIO_RUN_300_EVENT_RENDER";
 
     private const int SampleRate = 44100;
     private const int BitsPerSample = 16;
@@ -201,6 +211,129 @@ public class ListeningRenderTests : IDisposable
         }
 
         TestContext.Current.TestOutputHelper.WriteLine("Listening renders written to " + folder);
+    }
+
+    [Fact]
+    public async Task the_60_event_SkyTNT_comparisons_are_written_for_a_listening_check()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable(ShortPassVariableName) == "1",
+            "Set " + ShortPassVariableName + "=1 with the SkyTNT model bundle to write the 60-event comparisons.");
+        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
+
+        TestInstrumentLibraries.GeneralMidi();
+
+        var folder = Path.Combine(ListeningFolder(), "60-event-check");
+        Directory.CreateDirectory(folder);
+
+        var index = new StringBuilder();
+        Heading(index, folder);
+        index.AppendLine("SKYTNT COMPARISONS, 60 EVENTS PER PASS");
+        index.AppendLine(new string('-', 78));
+        index.AppendLine("The same presets, seeds, voicings and 1:50 duration as the 300-event seam renders.");
+        index.AppendLine("Each seam is a bar line; this checks the pass length measured at 8.4x real time.");
+        index.AppendLine();
+
+        var clubName = await RenderSeams(skytnt, SkyTNTPresets.ClubArrangement, FirstSeed,
+            60, folder, index);
+        index.AppendLine();
+        var ambientName = await RenderSeams(skytnt, SkyTNTPresets.AmbientElectronica, SecondSeed,
+            60, folder, index);
+        File.WriteAllText(Path.Combine(folder, "INDEX.txt"), index.ToString());
+
+        foreach (var name in new[] { clubName, ambientName })
+        {
+            using var reader = new WaveFileReader(Path.Combine(folder, name));
+            reader.SampleCount.Should().BeGreaterThan(0L, name + " holds no audio");
+        }
+
+        TestContext.Current.TestOutputHelper.WriteLine("60-event renders written to " + folder);
+    }
+
+    [Fact]
+    public async Task the_120_event_SkyTNT_comparisons_are_written_for_a_listening_check()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable(MiddlePassVariableName) == "1",
+            "Set " + MiddlePassVariableName + "=1 with the SkyTNT model bundle to write the 120-event comparisons.");
+        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
+
+        TestInstrumentLibraries.GeneralMidi();
+
+        var folder = Path.Combine(ListeningFolder(), "120-event-check");
+        Directory.CreateDirectory(folder);
+
+        var index = new StringBuilder();
+        Heading(index, folder);
+        index.AppendLine("SKYTNT COMPARISONS, 120 EVENTS PER PASS");
+        index.AppendLine(new string('-', 78));
+        index.AppendLine("Club Arrangement uses both seeds to check whether the poor 60-event result was seed-specific.");
+        index.AppendLine("Ambient Electronica uses seed 20260922, matching the earlier 60- and 300-event renders.");
+        index.AppendLine("Each render is 1:50. Every seam is a bar line.");
+        index.AppendLine();
+
+        var clubFirst = await RenderSeams(skytnt, SkyTNTPresets.ClubArrangement, FirstSeed,
+            120, folder, index);
+        index.AppendLine();
+        var clubSecond = await RenderSeams(skytnt, SkyTNTPresets.ClubArrangement, SecondSeed,
+            120, folder, index);
+        index.AppendLine();
+        var ambient = await RenderSeams(skytnt, SkyTNTPresets.AmbientElectronica, SecondSeed,
+            120, folder, index);
+        File.WriteAllText(Path.Combine(folder, "INDEX.txt"), index.ToString());
+
+        foreach (var name in new[] { clubFirst, clubSecond, ambient })
+        {
+            using var reader = new WaveFileReader(Path.Combine(folder, name));
+            reader.SampleCount.Should().BeGreaterThan(0L, name + " holds no audio");
+        }
+
+        TestContext.Current.TestOutputHelper.WriteLine("120-event renders written to " + folder);
+    }
+
+    [Fact]
+    public async Task the_300_event_ClubArrangement_second_seed_is_timed()
+        => await WriteTimed300EventClub(SecondSeed, "INDEX.txt");
+
+    [Fact]
+    public async Task the_300_event_ClubArrangement_first_seed_is_timed()
+        => await WriteTimed300EventClub(FirstSeed, "INDEX-seed20260921.txt");
+
+    private async Task WriteTimed300EventClub(int seed, string indexFileName)
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable(ThreeHundredPassVariableName) == "1",
+            "Set " + ThreeHundredPassVariableName + "=1 with the SkyTNT model bundle to time the 300-event render.");
+        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
+
+        TestInstrumentLibraries.GeneralMidi();
+
+        var folder = Path.Combine(ListeningFolder(), "300-event-check");
+        Directory.CreateDirectory(folder);
+
+        var index = new StringBuilder();
+        Heading(index, folder);
+        index.AppendLine("CLUB ARRANGEMENT, 300 EVENTS PER PASS, SEED " +
+                         seed.ToString(CultureInfo.InvariantCulture));
+        index.AppendLine(new string('-', 78));
+        index.AppendLine("One 1:50 Club Arrangement render, timed separately from the other seed.");
+        index.AppendLine("The render writes a WAV without playing any audio.");
+        index.AppendLine();
+
+        var started = Stopwatch.GetTimestamp();
+        var name = await RenderSeams(skytnt, SkyTNTPresets.ClubArrangement, seed,
+            300, folder, index);
+        var elapsed = Stopwatch.GetElapsedTime(started);
+        var realTimeFactor = SeamRenderLength.TotalSeconds / elapsed.TotalSeconds;
+
+        index.AppendLine(string.Format(CultureInfo.InvariantCulture,
+            "      render wall time (including model startup): {0}; {1:0.00}x real time",
+            elapsed.ToString("c", CultureInfo.InvariantCulture), realTimeFactor));
+        File.WriteAllText(Path.Combine(folder, indexFileName), index.ToString());
+
+        using var reader = new WaveFileReader(Path.Combine(folder, name));
+        reader.SampleCount.Should().BeGreaterThan(0L, name + " holds no audio");
+
+        TestContext.Current.TestOutputHelper.WriteLine(
+            "300-event render written to " + folder + " in " +
+            elapsed.ToString("c", CultureInfo.InvariantCulture));
     }
 
     // --- the three kinds of render ---------------------------------------------------------------
