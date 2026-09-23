@@ -1,0 +1,12 @@
+# Let git normalize text files by default (LF in the repository, platform endings on checkout).
+* text=auto
+
+# ABC notation and the MuPT model's raw text are compared character for character by the tests,
+# and the converter writes LF - so these must stay LF on every platform, whatever core.autocrlf says.
+*.abc     text eol=lf
+*.raw.txt text eol=lf
+
+# Binary files: never touch their bytes.
+*.onnx binary
+*.mid  binary
+*.png  binary
