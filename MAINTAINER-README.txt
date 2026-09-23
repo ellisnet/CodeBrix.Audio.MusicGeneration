@@ -104,7 +104,7 @@ REPOSITORY LAYOUT
                                    and the ported notation post-processing
       Presets/                     ready-made requests: the prompts the
                                    listening sessions were run on, and the
-                                   provisional electronica ones
+                                   accepted electronica ones
       Internal/                    the piece builder, the bar grid, the
                                    embedded-resource reader, the instrument
                                    library seam
@@ -253,7 +253,7 @@ deliberately and by themselves:
   CODEBRIX_AUDIO_RUN_LISTENING_RENDERS=1
       ListeningRenderTests, WITH BOTH MODEL VARIABLES. It writes the listening
       set a person actually sits down with: every preset for about a minute
-      through "ModestSynthGm" with its suggested voicing, the three provisional
+      through "ModestSynthGm" with its suggested voicing, the three accepted
       electronica presets twice with different seeds, A SEAM SET in which each
       model continues its own piece across at least two seams, and one
       follow-up render per model in which the prompt changes mid-piece. Output
@@ -291,23 +291,14 @@ load average recorded beside every number. What they settled:
                                four - and four threads is a sixth of a
                                twenty-four-thread laptop but ALL of a four-core
                                board, which is why the default is a share.
-  SkyTNT, events per pass      1,000. The opening 250 events of a pass are
-                               written at 3.2-3.7x real time, the thousandth at
-                               1.3-1.45x, the two-thousandth at 0.7-0.8x -
-                               below real time. A seam resets the rate.
-                               LEFT AS PHASE 3A SETTLED IT, AND WORTH REVISITING
-                               BY EAR: because the rate falls inside a pass, the
-                               AVERAGE over a long piece is far below the
-                               opening rate. Six and a half minutes of music at
-                               this default took about twenty minutes to
-                               generate on this laptop (29m 42s, 0.22x real
-                               time, 26 segments, on a dense four-part piece
-                               with drums); the same target written in 60-event
-                               passes took 46 SECONDS (8.4x, 29 segments). The
-                               default trades speed for fewer joins, and only a
-                               listening session can say whether that is the
-                               right way round. IT IS THE ONE DEFAULT IN THIS
-                               LIBRARY THAT THE NUMBERS ARGUE WITH.
+  SkyTNT, events per pass      1,000, retained after listening. Historical timings
+                               varied from fast openings to 0.22x over dense long
+                               renders. Shorter passes improved some timings but
+                               later 60/120/300-event auditions did not establish
+                               a reliable replacement across prompts and seeds.
+                               All three electronica presets are accepted.
+                               File size and warm-load working set do not bound
+                               inference memory: later managed runs reached GiB.
   MuPT, tokens per pass        448, which is what the rated music was written
                                at: twelve to twenty bars. At four threads the
                                model writes 23-29 seconds of music per second.
@@ -496,3 +487,56 @@ NOTES
     them; the file records the rating each entry rests on. Retuning them is a
     data edit - keep the ratings beside the values, and do not add a voicing
     nobody has heard.
+
+
+MUSECOCO INTEGRATION AND RELEASE GATE
+===================================
+MuseCocoMusicGenerator and MuseCocoPass adapt ModelRunner's streaming contract.
+Tests carry tiny synthetic ONNX bundles with their own license/provenance;
+they are test fixtures, not shipping model weights. The optional live bundle
+is selected by CODEBRIX_AUDIO_MUSICGEN_MUSECOCO_BUNDLE. No ModelManager or Python
+may enter the shipping dependency set. Experimental continuation owns its runner
+context within one enumeration and preserves the runner's absolute section ticks.
+
+The current integration references the published ModelRunner package from
+nuget.org. Temporary Ollama packages are no longer required. The shipping dependency
+set remains Audio, ModestSynth and ModelRunner; ModelManager belongs only in the
+model repositories' nonshipping staging tools. Jeremy owns publication; agents
+leave changes uncommitted.
+
+The MuseCoco playback test must keep rendering while waiting for progress.
+Application-owned output advances only when pulled. Waiting on a horizon while
+stopping Render freezes the play head and cannot prove continuous playback.
+The live gate asserts early audio, normal completion, and zero late events/gaps.
+
+The earlier published runner lacked CreateContinuation and
+GenerateContinuationStreamingAsync. That historical probe remains in the session
+FIXLIST; the subsequent published release now replaces the temporary dependency.
+The PLAN records the exact published version and its validation results.
+
+FINAL LOCAL VALIDATION — 2026-09-22
+--------------------------------
+Core Debug/Release, staged MuPT/SkyTNT/MuseCoco (including text prompting),
+streaming and 6:25 WAV/Opus render gates pass. See the session PLAN for counts,
+logs and historical failed test-driver attempts. Model packages were consumed
+directly and through an intermediary NuGet, separately and together; build/publish
+asset hashes and notices match staging. The core package still has exactly three
+dependencies. Review NuGets must not be published with temporary dependencies.
+
+MuPT follow-up listening files run the live host faster than real time. In an
+instrumented reproduction the follow-up took 0.260 wall-clock seconds to promote,
+while 11.5 music seconds were rendered. The safe switch then landed after the
+committed window at a bar line. Such files cannot establish wall-clock response
+latency. The listening test now records request, commit, promotion and switch times.
+
+EXPERIMENTAL CONTINUATION PERFORMANCE EVIDENCE
+--------------------------------------------
+The standalone core-NuGet MuseCoco consumer uses 384 total tokens in 192-token
+sections, four context bars and explicit piano/moderate attributes. At the default
+pre-roll it produced first audio at 5.943 s while generation was active and
+completed at 49.602 s, with zero late events, one buffering gap and segment
+fallback. Peak process memory was 908.51 MiB. A 0.5 s pre-roll also had one gap.
+These are measured limits, not a defect requiring an upstream workaround: the
+contract permits rests when generation falls behind. The ordinary 512-token
+single-pass MuseCoco live playback test completed with zero gaps. Do not claim
+all experimental continuations are gapless from either result.

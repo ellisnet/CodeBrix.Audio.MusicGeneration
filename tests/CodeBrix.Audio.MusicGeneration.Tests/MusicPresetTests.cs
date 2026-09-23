@@ -16,7 +16,7 @@ using Xunit;
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
 /// <summary>
-/// THE PRESETS: the eight prompts the MuPT listening session was run on, and the three provisional
+/// THE PRESETS: the eight prompts the MuPT listening session was run on, and the three accepted
 /// electronica starting points for the other model.
 /// </summary>
 /// <remarks>
@@ -129,7 +129,7 @@ public class MusicPresetTests
     }
 
     [Fact]
-    public void no_MuPT_preset_is_provisional_and_every_SkyTNT_one_is()
+    public void every_accepted_MuPT_and_SkyTNT_preset_is_not_provisional()
     {
         //Arrange
         var provisional = new List<string>();
@@ -145,13 +145,13 @@ public class MusicPresetTests
 
         foreach (var preset in SkyTNTPresets.All)
         {
-            if (!preset.IsProvisional)
+            if (preset.IsProvisional)
             {
                 provisional.Add(preset.Name);
             }
         }
 
-        //Assert - the MuPT presets were listened to; the electronica ones have not been
+        //Assert - both families have been accepted in listening sessions
         provisional.Should().BeEmpty();
     }
 
@@ -348,7 +348,7 @@ public class MusicPresetTests
 
         //Assert
         silent.Should().BeEmpty();
-        SkyTNTPresets.AmbientElectronica.ToString().Should().Contain("provisional");
+        SkyTNTPresets.AmbientElectronica.ToString().Should().NotContain("provisional");
         MuPTPresets.WaltzDuetInAMinor.ToString().Should().Contain(BuiltInRenditions.AmbientDuet);
     }
 

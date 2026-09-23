@@ -1,0 +1,1172 @@
+{
+  "format": "codebrix.music-attributes.v1",
+  "id": "musecoco-attributes-v1",
+  "definitions": [
+    {
+      "name": "instrument.piano",
+      "key": "I1s2_piano",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_0_0",
+        "I1s2_0_1",
+        "I1s2_0_2"
+      ],
+      "default": 2,
+      "bertHead": 0
+    },
+    {
+      "name": "instrument.keyboard",
+      "key": "I1s2_keyboard",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_1_0",
+        "I1s2_1_1",
+        "I1s2_1_2"
+      ],
+      "default": 2,
+      "bertHead": 1
+    },
+    {
+      "name": "instrument.percussion",
+      "key": "I1s2_percussion",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_2_0",
+        "I1s2_2_1",
+        "I1s2_2_2"
+      ],
+      "default": 2,
+      "bertHead": 2
+    },
+    {
+      "name": "instrument.organ",
+      "key": "I1s2_organ",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_3_0",
+        "I1s2_3_1",
+        "I1s2_3_2"
+      ],
+      "default": 2,
+      "bertHead": 3
+    },
+    {
+      "name": "instrument.guitar",
+      "key": "I1s2_guitar",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_4_0",
+        "I1s2_4_1",
+        "I1s2_4_2"
+      ],
+      "default": 2,
+      "bertHead": 4
+    },
+    {
+      "name": "instrument.bass",
+      "key": "I1s2_bass",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_5_0",
+        "I1s2_5_1",
+        "I1s2_5_2"
+      ],
+      "default": 2,
+      "bertHead": 5
+    },
+    {
+      "name": "instrument.violin",
+      "key": "I1s2_violin",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_6_0",
+        "I1s2_6_1",
+        "I1s2_6_2"
+      ],
+      "default": 2,
+      "bertHead": 6
+    },
+    {
+      "name": "instrument.viola",
+      "key": "I1s2_viola",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_7_0",
+        "I1s2_7_1",
+        "I1s2_7_2"
+      ],
+      "default": 2,
+      "bertHead": 7
+    },
+    {
+      "name": "instrument.cello",
+      "key": "I1s2_cello",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_8_0",
+        "I1s2_8_1",
+        "I1s2_8_2"
+      ],
+      "default": 2,
+      "bertHead": 8
+    },
+    {
+      "name": "instrument.harp",
+      "key": "I1s2_harp",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_9_0",
+        "I1s2_9_1",
+        "I1s2_9_2"
+      ],
+      "default": 2,
+      "bertHead": 9
+    },
+    {
+      "name": "instrument.strings",
+      "key": "I1s2_strings",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_10_0",
+        "I1s2_10_1",
+        "I1s2_10_2"
+      ],
+      "default": 2,
+      "bertHead": 10
+    },
+    {
+      "name": "instrument.voice",
+      "key": "I1s2_voice",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_11_0",
+        "I1s2_11_1",
+        "I1s2_11_2"
+      ],
+      "default": 2,
+      "bertHead": 11
+    },
+    {
+      "name": "instrument.trumpet",
+      "key": "I1s2_trumpet",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_12_0",
+        "I1s2_12_1",
+        "I1s2_12_2"
+      ],
+      "default": 2,
+      "bertHead": 12
+    },
+    {
+      "name": "instrument.trombone",
+      "key": "I1s2_trombone",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_13_0",
+        "I1s2_13_1",
+        "I1s2_13_2"
+      ],
+      "default": 2,
+      "bertHead": 13
+    },
+    {
+      "name": "instrument.tuba",
+      "key": "I1s2_tuba",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_14_0",
+        "I1s2_14_1",
+        "I1s2_14_2"
+      ],
+      "default": 2,
+      "bertHead": 14
+    },
+    {
+      "name": "instrument.horn",
+      "key": "I1s2_horn",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_15_0",
+        "I1s2_15_1",
+        "I1s2_15_2"
+      ],
+      "default": 2,
+      "bertHead": 15
+    },
+    {
+      "name": "instrument.brass",
+      "key": "I1s2_brass",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_16_0",
+        "I1s2_16_1",
+        "I1s2_16_2"
+      ],
+      "default": 2,
+      "bertHead": 16
+    },
+    {
+      "name": "instrument.sax",
+      "key": "I1s2_sax",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_17_0",
+        "I1s2_17_1",
+        "I1s2_17_2"
+      ],
+      "default": 2,
+      "bertHead": 17
+    },
+    {
+      "name": "instrument.oboe",
+      "key": "I1s2_oboe",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_18_0",
+        "I1s2_18_1",
+        "I1s2_18_2"
+      ],
+      "default": 2,
+      "bertHead": 18
+    },
+    {
+      "name": "instrument.bassoon",
+      "key": "I1s2_bassoon",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_19_0",
+        "I1s2_19_1",
+        "I1s2_19_2"
+      ],
+      "default": 2,
+      "bertHead": 19
+    },
+    {
+      "name": "instrument.clarinet",
+      "key": "I1s2_clarinet",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_20_0",
+        "I1s2_20_1",
+        "I1s2_20_2"
+      ],
+      "default": 2,
+      "bertHead": 20
+    },
+    {
+      "name": "instrument.piccolo",
+      "key": "I1s2_piccolo",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_21_0",
+        "I1s2_21_1",
+        "I1s2_21_2"
+      ],
+      "default": 2,
+      "bertHead": 21
+    },
+    {
+      "name": "instrument.flute",
+      "key": "I1s2_flute",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_22_0",
+        "I1s2_22_1",
+        "I1s2_22_2"
+      ],
+      "default": 2,
+      "bertHead": 22
+    },
+    {
+      "name": "instrument.pipe",
+      "key": "I1s2_pipe",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_23_0",
+        "I1s2_23_1",
+        "I1s2_23_2"
+      ],
+      "default": 2,
+      "bertHead": 23
+    },
+    {
+      "name": "instrument.synthesizer",
+      "key": "I1s2_synthesizer",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_24_0",
+        "I1s2_24_1",
+        "I1s2_24_2"
+      ],
+      "default": 2,
+      "bertHead": 24
+    },
+    {
+      "name": "instrument.ethnic_instruments",
+      "key": "I1s2_ethnic_instruments",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_25_0",
+        "I1s2_25_1",
+        "I1s2_25_2"
+      ],
+      "default": 2,
+      "bertHead": 25
+    },
+    {
+      "name": "instrument.sound_effects",
+      "key": "I1s2_sound_effects",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_26_0",
+        "I1s2_26_1",
+        "I1s2_26_2"
+      ],
+      "default": 2,
+      "bertHead": 26
+    },
+    {
+      "name": "instrument.drum",
+      "key": "I1s2_drum",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "I1s2_27_0",
+        "I1s2_27_1",
+        "I1s2_27_2"
+      ],
+      "default": 2,
+      "bertHead": 27
+    },
+    {
+      "name": "melody_instrument",
+      "key": "I4",
+      "values": [
+        "piano",
+        "keyboard",
+        "percussion",
+        "organ",
+        "guitar",
+        "bass",
+        "violin",
+        "viola",
+        "cello",
+        "harp",
+        "strings",
+        "voice",
+        "trumpet",
+        "trombone",
+        "tuba",
+        "horn",
+        "brass",
+        "sax",
+        "oboe",
+        "bassoon",
+        "clarinet",
+        "piccolo",
+        "flute",
+        "pipe",
+        "synthesizer",
+        "ethnic_instruments",
+        "sound_effects",
+        "drum",
+        "unspecified"
+      ],
+      "tokens": [
+        "I4_0",
+        "I4_1",
+        "I4_2",
+        "I4_3",
+        "I4_4",
+        "I4_5",
+        "I4_6",
+        "I4_7",
+        "I4_8",
+        "I4_9",
+        "I4_10",
+        "I4_11",
+        "I4_12",
+        "I4_13",
+        "I4_14",
+        "I4_15",
+        "I4_16",
+        "I4_17",
+        "I4_18",
+        "I4_19",
+        "I4_20",
+        "I4_21",
+        "I4_22",
+        "I4_23",
+        "I4_24",
+        "I4_25",
+        "I4_26",
+        "I4_27",
+        "I4_28"
+      ],
+      "default": 28,
+      "bertHead": -1
+    },
+    {
+      "name": "chord_brightness",
+      "key": "C1",
+      "values": [
+        "bright",
+        "dark",
+        "bright_to_dark",
+        "dark_to_bright",
+        "unspecified"
+      ],
+      "tokens": [
+        "C1_0",
+        "C1_1",
+        "C1_2",
+        "C1_3",
+        "C1_4"
+      ],
+      "default": 4,
+      "bertHead": -1
+    },
+    {
+      "name": "danceable",
+      "key": "R1",
+      "values": [
+        "yes",
+        "no",
+        "unspecified"
+      ],
+      "tokens": [
+        "R1_0",
+        "R1_1",
+        "R1_2"
+      ],
+      "default": 2,
+      "bertHead": 28
+    },
+    {
+      "name": "note_density",
+      "key": "R3",
+      "values": [
+        "low",
+        "moderate",
+        "high",
+        "unspecified"
+      ],
+      "tokens": [
+        "R3_0",
+        "R3_1",
+        "R3_2",
+        "R3_3"
+      ],
+      "default": 3,
+      "bertHead": 29
+    },
+    {
+      "name": "composer",
+      "key": "S2s1",
+      "values": [
+        "beethoven",
+        "mozart",
+        "chopin",
+        "schubert",
+        "schumann",
+        "bach-js",
+        "haydn",
+        "brahms",
+        "Handel",
+        "tchaikovsky",
+        "mendelssohn",
+        "dvorak",
+        "liszt",
+        "stravinsky",
+        "mahler",
+        "prokofiev",
+        "shostakovich",
+        "unspecified"
+      ],
+      "tokens": [
+        "S2s1_0",
+        "S2s1_1",
+        "S2s1_2",
+        "S2s1_3",
+        "S2s1_4",
+        "S2s1_5",
+        "S2s1_6",
+        "S2s1_7",
+        "S2s1_8",
+        "S2s1_9",
+        "S2s1_10",
+        "S2s1_11",
+        "S2s1_12",
+        "S2s1_13",
+        "S2s1_14",
+        "S2s1_15",
+        "S2s1_16",
+        "S2s1_17"
+      ],
+      "default": 17,
+      "bertHead": 30
+    },
+    {
+      "name": "genre.new_age",
+      "key": "S4_new_age",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_0_0",
+        "S4_0_1",
+        "S4_0_2"
+      ],
+      "default": 2,
+      "bertHead": 31
+    },
+    {
+      "name": "genre.electronic",
+      "key": "S4_electronic",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_1_0",
+        "S4_1_1",
+        "S4_1_2"
+      ],
+      "default": 2,
+      "bertHead": 32
+    },
+    {
+      "name": "genre.rap",
+      "key": "S4_rap",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_2_0",
+        "S4_2_1",
+        "S4_2_2"
+      ],
+      "default": 2,
+      "bertHead": 33
+    },
+    {
+      "name": "genre.religious",
+      "key": "S4_religious",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_3_0",
+        "S4_3_1",
+        "S4_3_2"
+      ],
+      "default": 2,
+      "bertHead": 34
+    },
+    {
+      "name": "genre.international",
+      "key": "S4_international",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_4_0",
+        "S4_4_1",
+        "S4_4_2"
+      ],
+      "default": 2,
+      "bertHead": 35
+    },
+    {
+      "name": "genre.easy_listening",
+      "key": "S4_easy_listening",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_5_0",
+        "S4_5_1",
+        "S4_5_2"
+      ],
+      "default": 2,
+      "bertHead": 36
+    },
+    {
+      "name": "genre.avant_garde",
+      "key": "S4_avant_garde",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_6_0",
+        "S4_6_1",
+        "S4_6_2"
+      ],
+      "default": 2,
+      "bertHead": 37
+    },
+    {
+      "name": "genre.rnb",
+      "key": "S4_rnb",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_7_0",
+        "S4_7_1",
+        "S4_7_2"
+      ],
+      "default": 2,
+      "bertHead": 38
+    },
+    {
+      "name": "genre.latin",
+      "key": "S4_latin",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_8_0",
+        "S4_8_1",
+        "S4_8_2"
+      ],
+      "default": 2,
+      "bertHead": 39
+    },
+    {
+      "name": "genre.children",
+      "key": "S4_children",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_9_0",
+        "S4_9_1",
+        "S4_9_2"
+      ],
+      "default": 2,
+      "bertHead": 40
+    },
+    {
+      "name": "genre.jazz",
+      "key": "S4_jazz",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_10_0",
+        "S4_10_1",
+        "S4_10_2"
+      ],
+      "default": 2,
+      "bertHead": 41
+    },
+    {
+      "name": "genre.classical",
+      "key": "S4_classical",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_11_0",
+        "S4_11_1",
+        "S4_11_2"
+      ],
+      "default": 2,
+      "bertHead": 42
+    },
+    {
+      "name": "genre.comedy_spoken",
+      "key": "S4_comedy_spoken",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_12_0",
+        "S4_12_1",
+        "S4_12_2"
+      ],
+      "default": 2,
+      "bertHead": 43
+    },
+    {
+      "name": "genre.pop_rock",
+      "key": "S4_pop_rock",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_13_0",
+        "S4_13_1",
+        "S4_13_2"
+      ],
+      "default": 2,
+      "bertHead": 44
+    },
+    {
+      "name": "genre.reggae",
+      "key": "S4_reggae",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_14_0",
+        "S4_14_1",
+        "S4_14_2"
+      ],
+      "default": 2,
+      "bertHead": 45
+    },
+    {
+      "name": "genre.stage",
+      "key": "S4_stage",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_15_0",
+        "S4_15_1",
+        "S4_15_2"
+      ],
+      "default": 2,
+      "bertHead": 46
+    },
+    {
+      "name": "genre.folk",
+      "key": "S4_folk",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_16_0",
+        "S4_16_1",
+        "S4_16_2"
+      ],
+      "default": 2,
+      "bertHead": 47
+    },
+    {
+      "name": "genre.blues",
+      "key": "S4_blues",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_17_0",
+        "S4_17_1",
+        "S4_17_2"
+      ],
+      "default": 2,
+      "bertHead": 48
+    },
+    {
+      "name": "genre.vocal",
+      "key": "S4_vocal",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_18_0",
+        "S4_18_1",
+        "S4_18_2"
+      ],
+      "default": 2,
+      "bertHead": 49
+    },
+    {
+      "name": "genre.holiday",
+      "key": "S4_holiday",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_19_0",
+        "S4_19_1",
+        "S4_19_2"
+      ],
+      "default": 2,
+      "bertHead": 50
+    },
+    {
+      "name": "genre.country",
+      "key": "S4_country",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_20_0",
+        "S4_20_1",
+        "S4_20_2"
+      ],
+      "default": 2,
+      "bertHead": 51
+    },
+    {
+      "name": "genre.symphony",
+      "key": "S4_symphony",
+      "values": [
+        "present",
+        "absent",
+        "unspecified"
+      ],
+      "tokens": [
+        "S4_21_0",
+        "S4_21_1",
+        "S4_21_2"
+      ],
+      "default": 2,
+      "bertHead": 52
+    },
+    {
+      "name": "bars",
+      "key": "B1s1",
+      "values": [
+        "1-4",
+        "5-8",
+        "9-12",
+        "13-16",
+        "unspecified"
+      ],
+      "tokens": [
+        "B1s1_0",
+        "B1s1_1",
+        "B1s1_2",
+        "B1s1_3",
+        "B1s1_4"
+      ],
+      "default": 4,
+      "bertHead": 53
+    },
+    {
+      "name": "time_signature",
+      "key": "TS1s1",
+      "values": [
+        "4/4",
+        "2/4",
+        "3/4",
+        "1/4",
+        "6/8",
+        "3/8",
+        "other",
+        "unspecified"
+      ],
+      "tokens": [
+        "TS1s1_0",
+        "TS1s1_1",
+        "TS1s1_2",
+        "TS1s1_3",
+        "TS1s1_4",
+        "TS1s1_5",
+        "TS1s1_6",
+        "TS1s1_7"
+      ],
+      "default": 7,
+      "bertHead": 54
+    },
+    {
+      "name": "key",
+      "key": "K1",
+      "values": [
+        "major",
+        "minor",
+        "unspecified"
+      ],
+      "tokens": [
+        "K1_0",
+        "K1_1",
+        "K1_2"
+      ],
+      "default": 2,
+      "bertHead": 55
+    },
+    {
+      "name": "tempo",
+      "key": "T1s1",
+      "values": [
+        "slow",
+        "moderate",
+        "fast",
+        "unspecified"
+      ],
+      "tokens": [
+        "T1s1_0",
+        "T1s1_1",
+        "T1s1_2",
+        "T1s1_3"
+      ],
+      "default": 3,
+      "bertHead": 56
+    },
+    {
+      "name": "pitch_range_octaves",
+      "key": "P4",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "unspecified"
+      ],
+      "tokens": [
+        "P4_0",
+        "P4_1",
+        "P4_2",
+        "P4_3",
+        "P4_4",
+        "P4_5",
+        "P4_6",
+        "P4_7",
+        "P4_8",
+        "P4_9",
+        "P4_10",
+        "P4_11",
+        "P4_12"
+      ],
+      "default": 12,
+      "bertHead": 57
+    },
+    {
+      "name": "structure",
+      "key": "ST1",
+      "values": [
+        "A",
+        "AB",
+        "AA",
+        "ABA",
+        "AAB",
+        "ABB",
+        "AAAA",
+        "AAAB",
+        "AABB",
+        "AABA",
+        "ABAA",
+        "ABAB",
+        "ABBA",
+        "ABBB",
+        "unspecified"
+      ],
+      "tokens": [
+        "ST1_0",
+        "ST1_1",
+        "ST1_2",
+        "ST1_3",
+        "ST1_4",
+        "ST1_5",
+        "ST1_6",
+        "ST1_7",
+        "ST1_8",
+        "ST1_9",
+        "ST1_10",
+        "ST1_11",
+        "ST1_12",
+        "ST1_13",
+        "ST1_14"
+      ],
+      "default": 14,
+      "bertHead": -1
+    },
+    {
+      "name": "emotion",
+      "key": "EM1",
+      "values": [
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q4",
+        "unspecified"
+      ],
+      "tokens": [
+        "EM1_0",
+        "EM1_1",
+        "EM1_2",
+        "EM1_3",
+        "EM1_4"
+      ],
+      "default": 4,
+      "bertHead": 58
+    },
+    {
+      "name": "duration_seconds",
+      "key": "TM1",
+      "values": [
+        "0-15",
+        "15-30",
+        "30-45",
+        "45-60",
+        "over_60",
+        "unspecified"
+      ],
+      "tokens": [
+        "TM1_0",
+        "TM1_1",
+        "TM1_2",
+        "TM1_3",
+        "TM1_4",
+        "TM1_5"
+      ],
+      "default": 5,
+      "bertHead": 59
+    }
+  ]
+}

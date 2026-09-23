@@ -52,7 +52,7 @@ internal static class ContinuationTail
             var midiEvent = played[i];
 
             if (midiEvent == null || midiEvent.AbsoluteTime < fromTick ||
-                midiEvent.AbsoluteTime >= endTick || IsCarriedHorizon(midiEvent))
+                midiEvent.AbsoluteTime >= endTick)
             {
                 continue;
             }
@@ -65,7 +65,7 @@ internal static class ContinuationTail
 
     /// <summary>The tick of the last real music there is, or -1 when there is none.</summary>
     /// <param name="played">Everything committed so far, in tick order.</param>
-    /// <returns>The tick, ignoring the carried horizon, which is not music.</returns>
+    /// <returns>The tick of the last event, or -1 when there is none.</returns>
     /// <remarks>
     /// THE TAIL IS MUSIC, NOT SILENCE. When the engine has HELD MUSIC BACK, the bars immediately
     /// before the next segment are the REST it inserted; a tail taken from there would describe a
@@ -82,7 +82,7 @@ internal static class ContinuationTail
         {
             var midiEvent = played[i];
 
-            if (midiEvent != null && !IsCarriedHorizon(midiEvent))
+            if (midiEvent != null)
             {
                 return midiEvent.AbsoluteTime;
             }
@@ -90,10 +90,6 @@ internal static class ContinuationTail
 
         return -1L;
     }
-
-    private static bool IsCarriedHorizon(MidiEvent midiEvent) =>
-        midiEvent is TextEvent text && text.MetaEventType == MetaEventType.TextEvent &&
-        text.Text.Length == 0;
 
     // A NOTE IS REBUILT RATHER THAN MOVED - MusicEventPlacement says why.
     private static MidiEvent Rebase(MidiEvent source, long tick) =>

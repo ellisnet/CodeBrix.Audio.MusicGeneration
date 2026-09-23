@@ -230,7 +230,7 @@ public class MusicSessionAudioTests
             foreach (var midiEvent in recording.GetTrackEvents(track))
             {
                 if (midiEvent == null || MidiEvent.IsNoteOff(midiEvent) ||
-                    MidiEvent.IsEndTrack(midiEvent) || IsCarriedHorizon(midiEvent))
+                    MidiEvent.IsEndTrack(midiEvent))
                 {
                     continue;
                 }
@@ -243,10 +243,6 @@ public class MusicSessionAudioTests
 
         return described;
     }
-
-    private static bool IsCarriedHorizon(MidiEvent midiEvent) =>
-        midiEvent is TextEvent text && text.MetaEventType == MetaEventType.TextEvent &&
-        text.Text.Length == 0;
 
     private static string Describe(MidiEvent midiEvent)
     {

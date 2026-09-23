@@ -14,7 +14,7 @@
     fourth dependency; this project is not the shipped library.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.264.61" />
+    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.264.1197" />
   </ItemGroup>
 
   <!--
@@ -25,7 +25,7 @@
     dependency question.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.264.95" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.264.1216" />
   </ItemGroup>
 
   <!--

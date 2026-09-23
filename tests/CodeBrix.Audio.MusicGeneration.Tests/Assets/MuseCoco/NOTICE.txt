@@ -1,0 +1,35 @@
+Synthetic offline fixtures copied unchanged from CodeBrix.Ollama on 2026-09-22.
+The weights are test data authored by Jeremy Ellis and contributors (MIT); no
+publisher model weights are included. They run through the public ModelRunner
+NuGet API with no ModelManager or Python dependency.
+
+MuseCoco schema/vocabulary: Microsoft Muzic, commit
+2b8739671ba06f819f31f568b8a79da581aaf6f9 (MIT), descriptive names added upstream.
+https://github.com/microsoft/muzic
+
+BERT WordPiece vocabulary: Google AI Language Team / Hugging Face;
+Copyright 2018 The Google AI Language Team Authors and The HuggingFace Inc. team.
+Apache-2.0; complete text in LICENSE-Apache-2.0.txt. No upstream NOTICE accompanies
+this tokenizer. See UPSTREAM-README.txt and LICENSE-CodeBrix.Ollama.txt.
+
+    MIT License
+
+    Copyright (c) Microsoft Corporation.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE

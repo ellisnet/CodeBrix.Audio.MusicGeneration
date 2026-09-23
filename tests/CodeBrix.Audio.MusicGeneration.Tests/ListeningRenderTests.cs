@@ -336,6 +336,22 @@ public class ListeningRenderTests : IDisposable
             elapsed.ToString("c", CultureInfo.InvariantCulture));
     }
 
+    [Fact]
+    public async Task the_MuPT_follow_up_records_request_commit_and_switch_times()
+    {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_RUN_FOLLOWUP_CHECK") == "1",
+            "Set CODEBRIX_AUDIO_RUN_FOLLOWUP_CHECK=1 to reproduce the MuPT follow-up render with timing evidence.");
+        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
+        TestInstrumentLibraries.GeneralMidi();
+        var folder = Path.Combine(ListeningFolder(), "followup-check");
+        Directory.CreateDirectory(folder);
+        var index = new StringBuilder("MuPT follow-up timing check; audio rendered, not played.\n");
+        await RenderFollowUp(mupt, MuPTPresets.WaltzDuetInAMinor, MuPTPresets.JigInD,
+            MuPTSeamPassTokens, folder, index);
+        File.WriteAllText(Path.Combine(folder, "INDEX.txt"), index.ToString());
+        TestContext.Current.TestOutputHelper.WriteLine(index.ToString());
+    }
+
     // --- the three kinds of render ---------------------------------------------------------------
 
     private async Task<string> RenderPreset(IMusicGenerator generator, MusicPreset preset,
@@ -425,6 +441,8 @@ public class ListeningRenderTests : IDisposable
         var blockTime = TimeSpan.FromSeconds((double)block / SampleRate);
         var atTime = TimeSpan.Zero;
         var changed = false;
+        var switchRecorded = false;
+        var committedAtCall = -1L;
 
         var factory = AudioFileWriterRegistry.Resolve(name);
 
@@ -461,13 +479,25 @@ public class ListeningRenderTests : IDisposable
 
                     if (!changed && atTime >= changeAt)
                     {
+                        committedAtCall = session.Engine.CommittedThroughTick;
+                        index.AppendLine($"      requested at wall={Stopwatch.GetElapsedTime(started).TotalSeconds:0.000}s, rendered={atTime.TotalSeconds:0.000}s, play head={session.Position.TotalSeconds:0.000}s; committed tick={committedAtCall}, committed time={session.Stream.TimeAtTick(committedAtCall).TotalSeconds:0.000}s; commit window={session.Engine.CommitWindow.TotalSeconds:0.000}s");
                         session.FollowUp(Requested(second, SecondSeed, cap));
                         changed = true;
+                    }
+                    if (changed && !switchRecorded && !session.Engine.HasPendingFollowUp)
+                    {
+                        session.GenerationError.Should().BeNull();
+                        var starts = session.Engine.SegmentStartTicks;
+                        var switchTick = starts[starts.Count - 1];
+                        switchTick.Should().BeGreaterThan(committedAtCall);
+                        index.AppendLine($"      promoted at wall={Stopwatch.GetElapsedTime(started).TotalSeconds:0.000}s, rendered={atTime.TotalSeconds:0.000}s, play head={session.Position.TotalSeconds:0.000}s; switch tick={switchTick}, switch time={session.Stream.TimeAtTick(switchTick).TotalSeconds:0.000}s");
+                        switchRecorded = true;
                     }
                 }
             }
         }
 
+        switchRecorded.Should().BeTrue("the follow-up must take over during the render");
         var took = Stopwatch.GetElapsedTime(started);
 
         index.AppendLine(string.Format(CultureInfo.InvariantCulture,

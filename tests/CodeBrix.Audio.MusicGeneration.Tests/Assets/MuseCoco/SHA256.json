@@ -1,0 +1,16 @@
+{
+  "LICENSE-Apache-2.0.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "LICENSE-CodeBrix.Ollama.txt": "b3ff09aeb00af04bd34219ff672e3b8435721c4f6861b54ae0195a5f187dc33e",
+  "NOTICE.txt": "9734c48ff38dc37e9fbd02af0493722f420ee2dc51314a7a52c56ebddaafe919",
+  "UPSTREAM-README.txt": "9b7a6cf4b97e5360b295ae1db39b989aac837198ae83919e649697019743d475",
+  "music/decoder.onnx": "eed788528a034ea1f3c435bdc15cd7d6e7900e835372a9647f2314bca320c5a1",
+  "music/expected.json": "8ad767314555fe62f4777cec3ca15c77635c887a4f2ba0ff97a12350da348c04",
+  "music/musecoco.json": "dd510893b3e19f3838f271e8c1795b9706772dfc8e12d6522a7bd54b060e7e6c",
+  "music/music-attributes.json": "73dc2cc990fe40c801703be7f2d9084f6be8dc96e9020a907a8aa55b56b7559a",
+  "music/vocabulary.json": "29b68641a0267ff6e9ce3bdd4f39de34864559b35e45dfb9277897fc4e461df5",
+  "text/attributes.onnx": "4bfec938016192b251786228107deed6d47f4e363b0a35ff02567d25a64a3a72",
+  "text/expected.json": "d87d8a635db9b0d4cb434dacc3e4313e79382e53b8ea09f25ad5605f8d8faa0e",
+  "text/musecoco.json": "2007e116ec713458a4068cfffd3c58e30365ed2152a2855b4f749d6e77daec7e",
+  "text/music-attributes.json": "73dc2cc990fe40c801703be7f2d9084f6be8dc96e9020a907a8aa55b56b7559a",
+  "text/wordpiece.json": "6f15791c69ee8e5b534e960811795346857a3f867f5460b979d11e4e7706d9ca"
+}

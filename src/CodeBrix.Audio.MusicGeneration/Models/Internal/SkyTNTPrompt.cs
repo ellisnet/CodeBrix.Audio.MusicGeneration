@@ -165,7 +165,7 @@ internal static class SkyTNTPrompt
                     : ModelMidiEvent.KeySignature(tick, 0, key.SharpsFlats, key.MajorMinor == 1);
 
             default:
-                // Everything else - note-offs, text, the carried horizon - is not music this model
+                // Everything else - note-offs and text - is not music this model
                 // reads, and the model runner's own reader drops the same kinds.
                 return null;
         }

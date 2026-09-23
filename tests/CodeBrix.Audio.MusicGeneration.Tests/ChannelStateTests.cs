@@ -4,6 +4,7 @@ using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Rendition;
 using SilverAssertions;
 using SilverAssertions.Collections;
+using SilverAssertions.Numeric;
 using SilverAssertions.Primitives;
 using Xunit;
 
@@ -23,6 +24,48 @@ public class ChannelStateTests
     private const int PitchBendCommand = 0xE0;
     private const int ChannelPressureCommand = 0xD0;
     private const int PatchChangeCommand = 0xC0;
+
+    [Fact]
+    public void a_replaced_instrument_keeps_rendering_its_release_tail()
+    {
+        //Arrange - a sustained pad, with a fixed rendition so no automatic layer contributes
+        var library = Library();
+        var rendition = new MusicRendition("RingOut", "A part that follows program changes.")
+        {
+            FollowsProgramChanges = true,
+            MasterGain = 1.0F
+        };
+        rendition.Voices.Add(new RenditionVoice(4, 1.0F));
+        var voicer = new RenditionVoicer(rendition, library, SampleRate, null, 1.0F);
+        var router = voicer.Router;
+        voicer.Observe(Note(0L, 1));
+        voicer.ApplyPending(0, 0x90, 60);
+        router.ProcessMidiMessage(0, 0x90, 60, 100);
+        var left = new float[2048];
+        var right = new float[2048];
+        for (var block = 0; block < 4; block++)
+        {
+            router.Render(left, right);
+        }
+        var previous = library.Created.Single();
+        previous.ActiveVoiceCount.Should().BeGreaterThan(0);
+
+        //Act - replace the sounding part, without playing any note on the new instrument
+        voicer.Observe(new PatchChangeEvent(Resolution, 1, (int)GeneralMidiProgram.Flute));
+        voicer.ApplyPending(0, PatchChangeCommand, (int)GeneralMidiProgram.Flute);
+        router.Render(left, right);
+
+        //Assert - the released child still contributes audio, then is retired when its tail ends
+        router.RetiredChildCount.Should().Be(1);
+        previous.ActiveVoiceCount.Should().BeGreaterThan(0);
+        left.Concat(right).Max(value => Math.Abs(value)).Should().BeGreaterThan(0.0001F);
+        library.Created.Last().NoteOnCount.Should().Be(0);
+        for (var block = 0; block < 300 && router.RetiredChildCount != 0; block++)
+        {
+            router.Render(left, right);
+        }
+        router.RetiredChildCount.Should().Be(0);
+    }
 
     [Fact]
     public void a_volume_and_a_pan_set_at_tick_zero_reach_a_part_that_enters_much_later()

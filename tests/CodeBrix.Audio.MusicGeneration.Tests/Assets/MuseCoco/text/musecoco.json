@@ -1,0 +1,9 @@
+{
+  "format": "codebrix.musecoco.v1",
+  "kind": "text",
+  "graph": "attributes.onnx",
+  "schema": "music-attributes.json",
+  "tokenizer": "wordpiece.json",
+  "maxSequenceLength": 512,
+  "classifierCount": 60
+}

@@ -140,29 +140,27 @@ public class ModelDoneCriterionTests : IDisposable
 
         using var session = new MusicSession(options);
 
-        //Act - the DEFAULT pre-roll is five seconds, and the play head does not move until that
-        //much music is written ahead of it, so the wait has to clear it before a pull can hear
-        //anything at all
+        // Act: an application-owned player must keep pulling audio while waiting for
+        // later music, otherwise the test itself freezes the playback position.
         session.Play();
-
-        await WaitFor(() => session.Stream.HorizonTime >= TimeSpan.FromSeconds(8.0) ||
-                            session.GenerationError != null);
-
-        session.GenerationError.Should().BeNull();
-
-        var atFirstAudio = session.Stream.HorizonTime;
+        var timer = Stopwatch.StartNew();
         var peak = 0.0F;
-        var left = new float[SampleRate];
-        var right = new float[SampleRate];
-
-        for (var second = 0; second < 3; second++)
+        var left = new float[2048];
+        var right = new float[2048];
+        var blockDuration = TimeSpan.FromSeconds((double)left.Length / SampleRate);
+        while (peak <= 0.001F && session.GenerationError == null && timer.Elapsed < TimeSpan.FromMinutes(3))
         {
             session.Renderer.Render(left, right);
             peak = Math.Max(peak, Peak(left, right));
+            await Task.Delay(blockDuration, TestContext.Current.CancellationToken);
         }
-
-        await WaitFor(() => session.Stream.HorizonTime > atFirstAudio ||
-                            session.GenerationError != null);
+        var atFirstAudio = session.Stream.HorizonTime;
+        while ((session.Stream.HorizonTime <= atFirstAudio || session.Position <= TimeSpan.Zero) && session.GenerationError == null &&
+               timer.Elapsed < TimeSpan.FromMinutes(3))
+        {
+            session.Renderer.Render(left, right);
+            await Task.Delay(blockDuration, TestContext.Current.CancellationToken);
+        }
 
         //Assert - real audio came out, it came out of the model that was named, and more music
         //arrived after the first of it had been listened to: that is streaming while generating
@@ -175,11 +173,7 @@ public class ModelDoneCriterionTests : IDisposable
         session.Diagnostics.LateEventCount.Should().Be(0);
         session.GenerationError.Should().BeNull();
 
-        // THE DIAGNOSTICS LINE IS REPORTED, NOT ASSERTED, and it is worth saying why: this test
-        // waits by spinning, and nothing pulls audio while it waits, so the real-time factor and
-        // the delivery mode it prints are distorted by the test's own rig. What is ASSERTED is
-        // the criterion itself - music came out of the named model, and more of it arrived after
-        // the first of it had been listened to.
+        // Speed and fallback mode depend on the machine; ordering and later progress do not.
         Report(generator.Name + " streaming: " + session.Diagnostics);
     }
 

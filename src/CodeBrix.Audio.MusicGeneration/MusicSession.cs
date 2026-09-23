@@ -414,16 +414,17 @@ public sealed class MusicSession : IDisposable
     /// <param name="request">What the music should be from now on.</param>
     /// <remarks>
     /// <para>
-    /// THE LATENCY IS A FEW SECONDS whatever <see cref="MusicGenerationOptions.GenerateAhead"/> is,
-    /// because the lookahead lives in memory rather than on the timeline. A second follow-up made
-    /// before the first has taken over REPLACES it.
+    /// Latency includes cancellation of any previous generation, preparing the new pre-roll, and
+    /// reaching a safe bar line after already committed music. Uncommitted lookahead does not have
+    /// to finish playing. There is no fixed latency guarantee. A second follow-up made before the
+    /// first has taken over replaces it.
     /// </para>
     /// <para>
     /// WHAT IS KEPT ACROSS THE SEAM, and what is not. The tempo, the metre, the key and each part's
     /// program and controllers carry across, and the seam emits nothing that has not changed. Notes
-    /// still sounding keep their full length - EXCEPT on a part whose INSTRUMENT really changes,
-    /// where the new instrument replaces the old one and whatever that part was holding stops at
-    /// that moment. Only parts whose instrument actually changes are re-voiced; every part the new
+    /// still sounding keep their full length on unchanged instruments. When an instrument changes,
+    /// Audio releases the old notes and continues rendering their release tails while new notes use
+    /// the replacement. Only parts whose instrument actually changes are re-voiced; every part the new
     /// music leaves on the same instrument, and every part a named rendition voiced, is untouched,
     /// as is every loop and every continuation of the same music.
     /// </para>

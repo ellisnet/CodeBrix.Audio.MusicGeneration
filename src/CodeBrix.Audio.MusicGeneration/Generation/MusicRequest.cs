@@ -47,6 +47,7 @@ public sealed class MusicRequest
     public const int MaximumTicksPerQuarterNote = 32767;
 
     private readonly List<GeneralMidiProgram> instrumentHints = new List<GeneralMidiProgram>();
+    private readonly Dictionary<string, string> modelAttributes = new Dictionary<string, string>(StringComparer.Ordinal);
 
     private int ticksPerQuarterNote = DefaultTicksPerQuarterNote;
     private int? inferenceThreadCount;
@@ -64,6 +65,13 @@ public sealed class MusicRequest
     /// write it than describe it. Null or blank when there is none.
     /// </summary>
     public string ModelNativeText { get; set; }
+
+    /// <summary>
+    /// Model-specific categorical attributes, using names and values from the staged model's
+    /// schema. For MuseCoco, for example, set "tempo" to "slow" or "instrument.piano" to
+    /// "present". Explicit values override predictions from <see cref="Text"/>. Empty by default.
+    /// </summary>
+    public IDictionary<string, string> ModelAttributes => modelAttributes;
 
     /// <summary>
     /// A piece of MIDI to start from, as CodeBrix.Audio writes MIDI. A generator that takes one
@@ -190,6 +198,11 @@ public sealed class MusicRequest
         };
 
         copy.instrumentHints.AddRange(instrumentHints);
+
+        foreach (var pair in modelAttributes)
+        {
+            copy.modelAttributes.Add(pair.Key, pair.Value);
+        }
 
         return copy;
     }

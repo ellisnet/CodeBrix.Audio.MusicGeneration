@@ -47,6 +47,11 @@ public static class MusicGeneratorCapabilities
             used |= MusicRequestFeatures.ModelNativeText;
         }
 
+        if (request.ModelAttributes.Count > 0)
+        {
+            used |= MusicRequestFeatures.ModelAttributes;
+        }
+
         if (request.Primer != null)
         {
             used |= MusicRequestFeatures.Primer;
@@ -210,6 +215,7 @@ public static class MusicGeneratorCapabilities
         Add(features, MusicRequestFeatures.MaximumEvents, "a maximum event count", names);
         Add(features, MusicRequestFeatures.InferenceThreadCount, "an inference thread count", names);
         Add(features, MusicRequestFeatures.Continuation, "a continuation", names);
+        Add(features, MusicRequestFeatures.ModelAttributes, "model attributes", names);
 
         return names;
     }

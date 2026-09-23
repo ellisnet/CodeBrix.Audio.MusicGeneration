@@ -48,13 +48,11 @@ public class MuPTSlicePathTests
         "|:CDEF GAB2- | <|> <|> 1 B2 cdef ga :| <|> <|> 2 B2 GFED C2 | <|>";
 
     // INLINE FIELD CHANGES, each of them in force for the bars after it and none of them for the
-    // bars before, with a tie across the bar line after the key change. THERE IS NO INLINE [Q:]
-    // HERE: an inline tempo in a tune whose header has none becomes the tune's tempo at tick 0,
-    // which is a defect in the published ABC reader - see the hand-off - and this fence is not the
-    // place to hide it.
+    // bars before, with a tie across the bar line after the key change. Inline tempo changes
+    // also stay at their own ticks when the header has no tempo.
     private const string TieAfterInlineFieldChanges =
-        "CDEF GABc | <|> <|> [K:D] defg ab c2- | <|> <|> c2 defg ab | <|> <|> " +
-        "[M:3/4] [L:1/4] d e f | <|> <|> g a b | <|>";
+        "CDEF GABc | <|> <|> [Q:1/4=90] [K:D] defg ab c2- | <|> <|> c2 defg ab | <|> <|> " +
+        "[M:3/4] [L:1/4] [Q:1/4=144] d e f | <|> <|> g a b | <|>";
 
     // TWO VOICES AND ONE TIE: the upper part holds the note across the bar line, the lower part
     // does not, and nothing of either may be let out while the tie is open.

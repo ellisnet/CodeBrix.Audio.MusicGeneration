@@ -86,5 +86,8 @@ public enum MusicRequestFeatures
     /// kit is not a General MIDI program, so the instrument hints cannot carry it - and because a
     /// generator that writes notation has no percussion to give.
     /// </summary>
-    DrumKit = 1 << 16
+    DrumKit = 1 << 16,
+
+    /// <summary>Named categorical attributes, <see cref="MusicRequest.ModelAttributes"/>.</summary>
+    ModelAttributes = 1 << 17
 }

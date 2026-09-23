@@ -1,6 +1,6 @@
 # CodeBrix.Audio.MusicGeneration
 
-A fully managed, cross-platform music-generation library for .NET. CodeBrix.Audio.MusicGeneration produces music - from a piece it carries, or from a music model an application registers - as MIDI events that arrive while the music is still being written, voices them through a CodeBrix.Audio instrument library, and either plays them as they appear or renders them to an audio file. CodeBrix.Audio.MusicGeneration is provided as a .NET 10 library and associated `CodeBrix.Audio.MusicGeneration.MitLicenseForever` NuGet package.
+A cross-platform music-generation library for .NET. CodeBrix.Audio.MusicGeneration produces music - from a piece it carries, or from a music model an application registers - as MIDI events that arrive while the music is still being written, voices them through a CodeBrix.Audio instrument library, and either plays them as they appear or renders them to an audio file. CodeBrix.Audio.MusicGeneration is provided as a .NET 10 library and associated `CodeBrix.Audio.MusicGeneration.MitLicenseForever` NuGet package.
 
 CodeBrix.Audio.MusicGeneration supports applications and assemblies that target Microsoft .NET version 10.0 and later.
 Microsoft .NET version 10.0 is a Long-Term Supported (LTS) version of .NET, and was released on Nov 11, 2025; and will be actively supported by Microsoft until Nov 14, 2028.
@@ -19,7 +19,7 @@ Note that the NuGet package ID and the namespace are different - there is no pac
 
 XML documentation (IntelliSense) ships alongside the assembly.
 
-CodeBrix.Audio.MusicGeneration depends on `CodeBrix.Audio`, `CodeBrix.Audio.ModestSynth` and `CodeBrix.Ollama.ModelRunner`. Nothing else, and nothing outside .NET: there is no Python and nothing to install.
+CodeBrix.Audio.MusicGeneration depends on `CodeBrix.Audio`, `CodeBrix.Audio.ModestSynth` and `CodeBrix.Ollama.ModelRunner`. No ModelManager or Python is required at application runtime. MuPT uses ModelRunner's bundled native engine; SkyTNT and MuseCoco use its managed ONNX runtime. Retain the runtime assets for your deployment platform.
 
 To hear anything, an application registers an instrument library. This library registers none - that decision is always the application's - and the General MIDI library is one line: `GeneralMidiInstrumentLibrary.Register();`
 
@@ -37,11 +37,12 @@ To hear anything, an application registers an instrument library. This library r
 * One request type for every generator: free text, notation the generator reads itself, a MIDI primer, musical intent, instrument hints, a drum kit, a seed, generation controls and a continuation of the music so far
 * Musical intent turned into whatever each model really reads - a key, a metre, a unit note length, a tempo, a number of parts and a drum kit becoming a notation header, an opening in two parts, or a model's own generation options
 * Character words that mean something: a small vocabulary in which each word names a tempo, a mode or both, with a word that names neither refused by name rather than dropped
-* Named presets to start from: the prompts a listening session was run on, and provisional electronica starting points for the event model, each carrying the voicing its music was rated through
+* Named presets to start from: the prompts a listening session was run on, and accepted electronica starting points for the event model, each carrying the voicing its music was rated through
 * Refusal by name: a generator declares what it acts on, and a request that relies on anything else is refused rather than quietly ignored
 * A process-wide generator registry in which registering is not specifying - the built-in music plays until a generator is asked for by name
 * An adapter for the SkyTNT MIDI model, pointed at a bundle of files an application supplies - as a folder, or as a map of names against the paths they are really at - with nothing to install and no Python anywhere near it
 * An adapter for the MuPT model, which writes ABC notation: its text becomes music while it is still being written, one complete slice at a time, and nothing already heard is ever changed
+* An adapter for caller-staged MuseCoco models: musical attributes, optional natural-language prompting with a text bundle, streaming MIDI, and an explicitly experimental path that continues recent bars within a request
 
 ## Sample Code
 

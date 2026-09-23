@@ -46,7 +46,7 @@ THE MUSIC DOES NOT STOP. When a generator reaches the end of what it was
 writing, the same generator is asked to carry on and the next segment is placed
 at the next BAR LINE; for the embedded replays that means they loop. Ask for
 something different while it is playing with FollowUp(), and it takes over at a
-bar line a few seconds later. See "THE LIFE OF A STREAM".
+safe bar line after the new pre-roll is ready. See "THE LIFE OF A STREAM".
 
 OR RENDER IT TO A FILE INSTEAD - the second first-class way to use this package,
 and the same music either way:
@@ -67,8 +67,9 @@ machine that cannot compose as fast as it plays, the music comes out a phrase at
 a time with rests between, which sounds intentional, instead of stalling
 mid-phrase, which sounds broken. music.Diagnostics says which it is doing.
 
-Target framework: .NET 10. Everything is managed code - there is no Python
-anywhere in the dependency graph, and nothing to install.
+Target framework: .NET 10. The application runtime requires no Python or
+ModelManager. MuPT uses ModelRunner's bundled native inference engine; the
+SkyTNT and MuseCoco ONNX adapters use its managed runtime.
 
 
 INSTALLATION
@@ -415,38 +416,25 @@ ABC idea), a voice count - the instruments decide the parts - a target length,
 a character word it cannot turn into a tempo or a mode, and a REPETITION
 PENALTY, because this model applies none at all and music repeats on purpose.
 
-HOW FAST IT IS, ON A LAPTOP OF THIS CLASS - GUIDANCE, NOT A PROMISE. Measured
-on a sixteen-core laptop, in Release, at four threads: the opening 250 events of
-a pass are written at 3.2 to 3.7 times real time, the thousandth event at 1.3 to
-1.45, and the two-thousandth at 0.7 to 0.8 - BELOW real time. A seam resets the
-rate, which is why the default pass stops at a thousand.
+PERFORMANCE DEPENDS ON THE PASS, PROMPT AND RUNTIME. The original four-thread
+laptop measurements are historical baselines: opening 250-event SkyTNT passes
+reached 3.2-3.7x real time, but dense 1,000-event passes over a six-minute piece
+averaged 0.22x. A 60-event experiment was faster but later listening found weak
+joins and long silence for some prompts. The accepted presets therefore retain
+the 1,000-event default. A short fast opening does not prove sustained playback.
+Render ahead when the chosen model, prompt and deployment machine cannot keep
+pace. A session can fall back to complete segments separated by rests.
 
-THE RATE FALLS INSIDE A PASS, AND OVER A LONG PIECE THAT DECIDES EVERYTHING.
-The opening rate is not the average: the average is dominated by the slow end of
-every pass. MEASURED on this laptop, on a dense four-part piece with drums:
+MODEL SIZE IS NOT RUNTIME MEMORY. The reduced SkyTNT graphs total about 145 MiB;
+that does not include inference state, temporary buffers, the audio engine or
+other process memory. Earlier warm-load measurements around 310 MiB describe
+one short case. Later managed-runtime measurements reached several GiB; do not
+use either the package size or that early measurement as a memory budget.
+Measure representative long requests on the runtime and hardware you deploy.
+The conservative default uses a quarter of available processors, capped at four.
 
-    six minutes twenty-five seconds of music, default 1,000-event passes
-        29 minutes 42 seconds of generating - 0.22x real time, 26 segments
-    the same target, 60-event passes
-        46 seconds of generating - 8.4x real time, 29 segments
-
-So THIS MODEL, AT ITS DEFAULT PASS LENGTH, DOES NOT KEEP UP WITH ITSELF on a
-laptop when the music is dense: a session streaming it falls back to delivering
-a whole segment at a time, which is the engine noticing exactly that and doing
-the right thing. Sparser instrumentation is faster, and a shorter
-MaximumEventsPerPass is faster still - at the cost of more seams. There is no
-free choice here, only a dial; RENDER AHEAD when the piece has to be long and
-the machine is this one or slower. The model loads in
-about a tenth of a second from a warm file cache and costs about 310 MiB of
-working set. A CONTINUATION IS CHEAP: under a second from the request to the
-first event released, and a four-bar tail costs about the same as starting a
-fresh piece. Four threads reach the same rate as eight, inside the run-to-run
-spread, which is why the default takes a quarter of the machine and no more.
-A SMALL BOARD WILL NOT KEEP UP: see "WHEN TO PRE-GENERATE OR RENDER AHEAD
-INSTEAD OF STREAMING".
-
-THE ELECTRONICA PRESETS are written for this model - see "THE PRESETS". Every
-one of them is PROVISIONAL.
+THE ELECTRONICA PRESETS are written for this model - see "THE PRESETS". All
+three were accepted after listening to two seeds each on 2026-09-21.
 
 A PASS IS A WHOLE NUMBER OF BARS. The model stops where its event cap lands,
 usually part-way through a bar; the ragged last bar is held back rather than
@@ -466,6 +454,127 @@ the generation that is running and waits for it to end before it asks for the
 new music, and everything already settled - up to the generate-ahead window -
 plays on through the change. Only a caller driving the generator itself has to
 finish one generation before it asks for another.
+
+
+THE MuseCoco MODEL ADAPTER
+================================================================================
+MuseCocoMusicGenerator accepts a caller-staged MuseCoco music bundle. ModelRunner
+streams MIDI events before the complete piece exists. A separate, optional text
+bundle converts natural-language prompts to musical attributes. Neither staging,
+ModelManager nor Python runs in the consuming application.
+
+    using CodeBrix.Audio.ModestSynth;
+    using CodeBrix.Audio.MusicGeneration;
+    using CodeBrix.Audio.MusicGeneration.Generation;
+    using CodeBrix.Audio.MusicGeneration.Models;
+
+    GeneralMidiInstrumentLibrary.Register();
+    var muse = new MuseCocoMusicGenerator("MuseCoco", "/models/music-int4",
+        new MuseCocoGeneratorOptions
+        {
+            TextBundleDirectory = "/models/text-int8" // omit for attributes only
+        });
+    MusicGeneratorRegistry.Register(muse);           // no model load
+    await muse.PreloadAsync(cancellationToken);      // music only
+    var request = new MusicRequest
+    {
+        Seed = 20260921,
+        Controls = new MusicGenerationControls { Temperature = 1, TopK = 15, TopP = 1 }
+    };
+    request.ModelAttributes["instrument.piano"] = "present";
+    request.ModelAttributes["tempo"] = "moderate";
+    // Optional: request.Text = "A calm piece led by piano";
+    using var session = new MusicSession(new MusicGenerationOptions
+    {
+        Generator = muse.Name,
+        InstrumentLibrary = "ModestSynthGm",
+        Request = request,
+        EndOfPiece = EndOfPiecePolicy.Stop
+    });
+    session.Play();
+
+Keep the session alive while listening. Stop/dispose it and await any direct
+GenerateAsync enumeration's disposal before Release or Dispose on the generator.
+A session does not own the registered model's lifetime. Release unloads both
+models and allows reuse; Dispose permanently closes the generator. Concurrent
+inference, preload, release or disposal during inference is refused.
+
+Use Schema after preloading to inspect the music bundle's attribute names and
+allowed values. ModelAttributes is a mutable string dictionary on MusicRequest;
+requests are snapshotted for generation. Explicit entries override text-model
+predictions. Unknown names or values fail. The optional text model loads only
+when Text is used and must have a compatible schema. IsTextModelLoaded reports
+that separate load. Supplying text without a text bundle is refused by name.
+
+The adapter honours ModelAttributes, Seed, SamplingControls, MaximumEvents and
+InferenceThreadCount, plus FreeText when a text bundle was supplied. MaximumEvents
+counts REMIGEN2 TOKENS for this model, not emitted MIDI notes. Generic MusicIntent,
+model-native text, MIDI primers, program hints and MusicRequest.Continuation are
+refused. Request instrument.piano or another model attribute to condition the
+music, then use a rendition and Audio's program substitutions to voice it.
+Non-default repetition penalties, zero TopK and negative seeds are refused.
+MusicGeneration's ordinary sampling defaults still apply; the example above
+explicitly chooses the runner settings used in the real-model acceptance checks.
+
+Construct from a directory, or use the overload accepting IReadOnlyDictionary
+maps for music and optional text bundles. Maps include musecoco.json and every
+referenced graph, vocabulary and external-data file. Paths are captured as
+absolute paths. A text map and TextBundleDirectory cannot both be supplied.
+Schema is null before loading; LoadedThreadCount is null after release. Changing
+InferenceThreadCount for a later request reloads the models. Model files remain
+external assets owned and deployed by the application.
+
+MuseCocoGeneratorOptions:
+  InferenceThreadCount       conservative shared-machine default
+  MaximumTokensPerPass       2,560 new tokens; request MaximumEvents overrides it
+  MinimumTokensPerPass       512; clamped to the effective maximum, zero allows EOS
+  TextBundleDirectory        optional text classifier, loaded only when used
+  Clone()                    independent copy; construction snapshots the options
+
+The adapter converts the runner's 480 PPQ and zero-based channels to the request's
+resolution and Audio's one-based channels. Its exclusive horizon becomes an
+inclusive settled tick, including at coarse tick resolutions. Normal completion
+settles the last note's containing bar; cancellation does not invent a completed
+tail. MidiStream.AdvanceHorizon carries settled silence without synthetic events.
+Playback starts after pre-roll, subject to generation speed. Small model files
+do not bound inference memory or guarantee real-time generation.
+
+EXPERIMENTAL MuseCoco CONTINUATION
+---------------------------------
+To retain recent MuseCoco bars across successive sections WITHIN one request:
+
+    var continued = new MuseCocoMusicGenerator("MuseCocoContinued", "/models/music-int4",
+        new MuseCocoGeneratorOptions
+        {
+            ExperimentalContinuation = true,
+            ExperimentalContextBars = 4,
+            ExperimentalSectionTokens = 512,
+            MaximumTokensPerPass = 4096,
+            MinimumTokensPerPass = 0
+        });
+    MusicGeneratorRegistry.Register(continued);
+    // Select continued.Name in MusicGenerationOptions, with the attributes above.
+
+ExperimentalContinuation defaults to false. ContextBars accepts 1..16; four is
+the default. SectionTokens defaults to 512 and limits NEW tokens per section.
+The total request cap still applies and may exceed model position capacity:
+each section replays bounded recent context and emits only new events, with
+continuous timestamps and stable channels. The adapter settles each completed
+section and continues pulling the next while buffered music plays. Insufficient
+position capacity is an error; use fewer context bars in that case.
+
+A new GenerateAsync request, session pass or FollowUp starts fresh. The context
+is local to the enumeration; cancellation/early disposal discards it safely.
+This option does not enable arbitrary MusicRequest.Continuation or retain context
+between separate requests. Choose a larger total token cap to request a longer
+continued piece. MinimumTokensPerPass=0 allows natural section endings, and an
+empty/no-progress section ends the request. Seeded sections use successive seeds.
+This path is experimental: ordered events and playback timing are validated,
+while long-form musical quality still needs listening for each application.
+Recent-context replay costs inference time. A real packaged-consumer check with
+192-token sections completed with ordered audio but entered segment fallback and
+had a buffering rest even with the default pre-roll. This path does not promise
+gapless playback; monitor Diagnostics and render ahead where continuity is essential.
 
 
 THE MuPT MODEL ADAPTER
@@ -912,7 +1021,7 @@ and specify it by name.
     MusicPreset
       Name / Family / Description
       SuggestedRendition   the voicing this music was rated through, or null
-      IsProvisional        true while nobody has judged it by ear yet
+      IsProvisional        false for all built-in MuPT and SkyTNT presets
       CreateRequest()      a NEW request every time, yours to change
 
 THE MuPT PRESETS are the prompts a listening session was run on, carried as the
@@ -935,10 +1044,11 @@ notation, in parts, WITH NO DRUMS AT ALL.
 THE TWO DUETS ARE THE ONES THAT PRODUCE TWO-PART MUSIC, because their openings
 carry two parts - and they are also the two whose music was rated highest.
 
-THE SkyTNT PRESETS are electronica starting points, and EVERY ONE OF THEM IS
-PROVISIONAL: what is fact is that this model takes an instrument list, a drum
-kit and a tempo; what is a guess is that it does club music well. Nobody has
-listened to one yet, so they may be revised or withdrawn.
+THE SkyTNT PRESETS are accepted electronica starting points. Jeremy heard two
+seeds of each on 2026-09-21 and kept all three. They provide steady arrangements;
+repetition and limited musical development remain quality considerations. Keep
+the 1,000-event default: 60- and 120-event Club passes were not reliably accepted,
+and the 300-event timing varied by seed.
 
     FourOnTheFloor      a kick on every beat under a synthesized bass, 126, 4/4
     ClubArrangement     drums, synth bass, sawtooth lead, warm pad, 126, 4/4
@@ -996,7 +1106,7 @@ A FOLLOW-UP PROMPT changes the music WHILE IT PLAYS:
 The new generation starts alongside the one that is playing. When it has its own
 pre-roll buffered it TAKES OVER AT THE NEXT BAR LINE beyond what has been
 committed, the old generation is cancelled and its lookahead is dropped - so a
-prompt change takes a few seconds however big GenerateAhead is. Name a
+prompt change waits for new pre-roll and a safe bar line after committed music. Name a
 generator in the second argument to change model as well; leave it out and the
 one that is playing carries on with the new request. A second follow-up made
 before the first has taken over REPLACES it. ActiveSource changes AT THE SWITCH,
@@ -1014,12 +1124,12 @@ DIFFERENT generator starts at once, alongside the old one.
 A follow-up that is refused - an unregistered generator, a request the generator
 cannot honour - throws, and THE MUSIC CARRIES ON exactly as it was.
 
-WHAT A FOLLOW-UP KEEPS, AND WHAT IT DOES NOT. Everything above is kept, with one
-exception: A PART WHOSE INSTRUMENT REALLY CHANGES gets a new instrument at the
-switch, and whatever that part was holding stops at that moment. Only parts
-whose instrument actually changes are re-voiced - every part the new music
-leaves on the same instrument, every part a named rendition voiced, every loop
-and every continuation of the same music are untouched.
+WHAT A FOLLOW-UP KEEPS. Unchanged instruments keep their notes at full length.
+When a part's program selects a different instrument, Audio releases the old
+instrument's notes and continues rendering their release tails while the new
+instrument receives new notes. The release envelope determines the old sound's
+remaining duration. Parts left on the same instrument, rendition assignments,
+loops and continuations are untouched unless their instrument actually changes.
 
 A MACHINE THAT CANNOT KEEP UP. The engine measures its own generation rate and,
 when it falls below real time, stops streaming: nothing of a segment is heard
@@ -1052,10 +1162,13 @@ serves every later piece, every follow-up prompt and every other session.
 music.Release() gives the memory back and leaves it registered, so asking for it
 again loads it again. DISPOSING A SESSION RELEASES NOTHING.
 
-WHAT LOADING COSTS, measured on a laptop of this class with the file cache warm:
-about a tenth of a second and 310 MiB of working set for the SkyTNT adapter,
-about a fifth of a second and 336 MiB for MuPT at a 2,048-token context. The
-first load of all from cold storage is slower. Both at once is both figures.
+LOADING AND INFERENCE COSTS differ. Historical warm-cache loads took roughly
+0.1 s for SkyTNT and 0.2 s for MuPT at a 2,048-token context. Cold storage,
+context length and runtime changes affect both time and memory. Inference can
+allocate far more than loading: measure peak process memory over long requests,
+not only at PreloadAsync. MuPT uses ModelRunner's bundled native engine;
+SkyTNT and MuseCoco use managed ONNX. Loading multiple models retains each one
+until explicitly released.
 
 SHARING THE MACHINE. InferenceThreadCount passes through to the generator. Left
 unset - the default - each model-backed generator takes A SHARE OF THE MACHINE:
@@ -2097,18 +2210,19 @@ COMMON PITFALLS TO AVOID
     because until then nothing has chosen an instrument library.
   * EXPECTING THE MUSIC TO STOP WHEN THE PIECE ENDS. It does not: the generator
     is asked to carry on. Set EndOfPiece = Stop for music that ends.
-  * EXPECTING A FOLLOW-UP TO BE HEARD AT ONCE. It takes over at the next bar
-    line once it has its own pre-roll - a few seconds - and ActiveSource changes
-    then, not when you called FollowUp().
+  * EXPECTING A FOLLOW-UP TO BE HEARD AT ONCE. It takes over at a safe bar line
+    after its own pre-roll is ready. Cancellation, inference and already committed
+    music all contribute to latency; there is no fixed seconds-level guarantee.
+    ActiveSource changes at the switch, not when you called FollowUp().
   * FOLLOWING UP IN WORDS TO A GENERATOR THAT DOES NOT READ WORDS. A follow-up
     is an ordinary request and it is checked like one: sending
     new MusicRequest { Text = "..." } to an embedded replay is refused by name,
     and the music carries on. Change the GENERATOR instead, or use one that
     honours free text.
-  * EXPECTING A HELD NOTE TO SURVIVE A CHANGE OF INSTRUMENT. Replacing a part's
-    instrument stops what that part was holding. Only a part whose instrument
-    really changes is re-voiced, and a rendition's own voices do not change at
-    all unless you ask them to.
+  * CONFUSING REVOICING WITH CUTTING OFF AUDIO. On a program substitution the
+    published Audio router releases old notes and renders their release tails.
+    New notes use the replacement. Unchanged instruments retain full note lengths;
+    a rendition's program assignments change only when requested.
   * TESTING RealTimeFactor FOR ZERO. It is NULL until there has been enough
     generating to measure - "not yet known" rather than a number - so compare
     it and let a null comparison be false; do not test it against 0.
@@ -2427,7 +2541,7 @@ QUICK REFERENCE CARD
     MuPTPresets.ReelInGMinor | JigInD | WaltzInAMinor | AirInDMixolydian
               | HornpipeInG | OpenInC | DuetInC | WaltzDuetInAMinor
     SkyTNTPresets.FourOnTheFloor | ClubArrangement | AmbientElectronica
-                                                        // all PROVISIONAL
+                                                        // accepted presets
     MuPTPresets.All | .Find(name);  SkyTNTPresets.All | .Find(name)
     preset.CreateRequest() | .SuggestedRendition | .IsProvisional | .Family
 

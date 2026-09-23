@@ -868,15 +868,11 @@ public class MusicEngineLifecycleTests
 
     private static IReadOnlyList<MidiEvent> Committed(MidiStream stream) =>
         Recording(stream)
-            .Where(midiEvent => !MidiEvent.IsNoteOff(midiEvent) && !IsCarriedHorizon(midiEvent))
+            .Where(midiEvent => !MidiEvent.IsNoteOff(midiEvent))
             .ToArray();
 
     private static IEnumerable<long> NoteTicks(MidiStream stream) =>
         Committed(stream).OfType<NoteOnEvent>().Select(note => note.AbsoluteTime);
-
-    private static bool IsCarriedHorizon(MidiEvent midiEvent) =>
-        midiEvent is TextEvent text && text.MetaEventType == MetaEventType.TextEvent &&
-        text.Text.Length == 0;
 
     private static RecordingMusicGenerator Generator(string name, MidiEventCollection music,
         ManualTimeProvider time, double pacingRate) =>

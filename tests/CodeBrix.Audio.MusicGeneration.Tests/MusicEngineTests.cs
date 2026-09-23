@@ -77,12 +77,12 @@ public class MusicEngineTests
 
         //Assert - the note ends at tick 480 but the settled bar runs to 1920
         rig.Stream.HorizonTicks.Should().Be(4L * Resolution);
-        rig.Stream.ToMidiEventCollection().GetTrackEvents(0).Where(IsCarriedHorizon)
-            .Should().Contain(carried => carried.AbsoluteTime == 4L * Resolution);
+        rig.Stream.ToMidiEventCollection().GetTrackEvents(0)
+            .Should().NotContain(midiEvent => midiEvent is TextEvent);
     }
 
     [Fact]
-    public async Task the_carried_horizon_is_never_shown_to_a_synthesizer()
+    public async Task settled_silence_does_not_add_messages_to_the_timeline()
     {
         //Arrange
         using var rig = Rig(Sparse(), TimeSpan.FromSeconds(1.0));
@@ -90,16 +90,10 @@ public class MusicEngineTests
 
         //Act
         await EnginePump.RunUntilAsync(rig.Time, () => rig.Stream.IsCompleted);
-        var carried = rig.Stream.ToMidiEventCollection().GetTrackEvents(0)
-            .Where(IsCarriedHorizon).ToArray();
 
-        //Assert - it is a meta event with nothing in it, so no synthesizer ever sees it
-        carried.Should().NotBeEmpty();
-        carried.Should().AllSatisfy(midiEvent =>
-        {
-            midiEvent.CommandCode.Should().Be(MidiCommandCode.MetaEvent);
-            ((TextEvent)midiEvent).Text.Should().BeEmpty();
-        });
+        //Assert - advancing past the last note adds no synthetic event for a player to dispatch
+        Committed(rig.Stream).Should().Equal(await GeneratedAsync(Sparse()));
+        rig.Stream.HorizonTicks.Should().Be(4L * Resolution);
     }
 
     [Fact]
@@ -311,7 +305,7 @@ public class MusicEngineTests
             foreach (var midiEvent in recording.GetTrackEvents(track))
             {
                 if (midiEvent == null || MidiEvent.IsNoteOff(midiEvent) ||
-                    MidiEvent.IsEndTrack(midiEvent) || IsCarriedHorizon(midiEvent))
+                    MidiEvent.IsEndTrack(midiEvent))
                 {
                     continue;
                 }
@@ -322,10 +316,6 @@ public class MusicEngineTests
 
         return events.Select(Describe).OrderBy(text => text, StringComparer.Ordinal).ToArray();
     }
-
-    private static bool IsCarriedHorizon(MidiEvent midiEvent) =>
-        midiEvent is TextEvent text && text.MetaEventType == MetaEventType.TextEvent &&
-        text.Text.Length == 0;
 
     private static IReadOnlyList<long> CommittedStartTicks(MidiStream stream)
     {

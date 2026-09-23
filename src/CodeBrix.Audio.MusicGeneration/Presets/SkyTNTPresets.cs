@@ -7,23 +7,19 @@ using CodeBrix.Audio.MusicGeneration.Models;
 namespace CodeBrix.Audio.MusicGeneration.Presets;
 
 /// <summary>
-/// THREE ELECTRONICA STARTING POINTS FOR THE SkyTNT MODEL - and all three are PROVISIONAL, waiting
-/// to be judged by ear.
+/// Three electronica starting points for the SkyTNT model, accepted after listening to two seeds
+/// of each preset on 2026-09-21.
 /// </summary>
 /// <remarks>
 /// <para>
-/// WHY THEY ARE PROVISIONAL, SAID PLAINLY. What is FACT is that this model takes an instrument
-/// list, a drum kit and a tempo, and that a piece it wrote at 140 beats a minute WITH DRUMS was
-/// rated 8 out of 10 in a listening session. What is a GUESS is that it does club music well: its
-/// training material is not something this library has examined, and nobody has yet listened to a
-/// four-on-the-floor piece from it. These three are a reasoned guess, and a listening session
-/// confirms them, revises them or withdraws them.
+/// The listening sessions accepted all three presets. They produce steady, often repetitive
+/// arrangements; acceptance does not promise the musical development of a finished composition.
+/// The default remains 1,000 events per pass because shorter passes varied in quality by seed.
 /// </para>
 /// <para>
 /// WHY THESE INSTRUMENTS. Synthesized bass, sawtooth leads and warm pads are exactly the General
 /// MIDI families a synthesized bank is best at - there is no recorded instrument to fall short of
-/// - so if this model does do electronica, these presets are where the bank sounds most like
-/// itself.
+/// - and the listening sessions used these families in the synthesized instrument library.
 /// </para>
 /// <para>
 /// A DRUM KIT IS ASKED FOR PER REQUEST, through <see cref="MusicIntent.DrumKit"/>, and the ambient
@@ -71,16 +67,16 @@ public static class SkyTNTPresets
         AllPresets = new[] { FourOnTheFloor, ClubArrangement, AmbientElectronica };
     }
 
-    /// <summary>A kick on every beat under a synthesized bass. PROVISIONAL.</summary>
+    /// <summary>A kick on every beat under a synthesized bass.</summary>
     public static MusicPreset FourOnTheFloor { get; }
 
-    /// <summary>Drums, bass, a sawtooth lead and a warm pad. PROVISIONAL.</summary>
+    /// <summary>Drums, bass, a sawtooth lead and a warm pad.</summary>
     public static MusicPreset ClubArrangement { get; }
 
-    /// <summary>Pads and a bell-like lead, with no percussion. PROVISIONAL.</summary>
+    /// <summary>Pads and a bell-like lead, with no percussion.</summary>
     public static MusicPreset AmbientElectronica { get; }
 
-    /// <summary>Every preset here. All of them are provisional.</summary>
+    /// <summary>Every accepted SkyTNT preset.</summary>
     public static IReadOnlyList<MusicPreset> All => AllPresets;
 
     /// <summary>Finds a preset by name.</summary>
@@ -114,7 +110,7 @@ public static class SkyTNTPresets
         };
 
     private static MusicPreset Preset(string name, string description, Action<MusicRequest> fill) =>
-        new MusicPreset(name, SkyTNTMusicGenerator.SkyTNTFamily, description, null, true,
+        new MusicPreset(name, SkyTNTMusicGenerator.SkyTNTFamily, description, null, false,
             () =>
             {
                 var request = new MusicRequest();

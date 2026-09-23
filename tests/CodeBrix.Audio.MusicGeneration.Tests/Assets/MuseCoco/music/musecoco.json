@@ -1,0 +1,15 @@
+{
+  "format": "codebrix.musecoco.v1",
+  "kind": "music",
+  "graph": "decoder.onnx",
+  "schema": "music-attributes.json",
+  "vocabulary": "vocabulary.json",
+  "layers": 1,
+  "hiddenSize": 2,
+  "heads": 1,
+  "headSize": 2,
+  "positionCount": 32,
+  "ticksPerQuarterNote": 480,
+  "positionsPerQuarterNote": 12,
+  "prefixPositionStart": 63
+}

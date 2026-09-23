@@ -466,7 +466,7 @@ public class MusicEngineNeverLateTests
 
     private static IReadOnlyList<MidiEvent> Committed(MidiStream stream) =>
         Recording(stream)
-            .Where(midiEvent => !MidiEvent.IsNoteOff(midiEvent) && !IsCarriedHorizon(midiEvent))
+            .Where(midiEvent => !MidiEvent.IsNoteOff(midiEvent))
             .ToArray();
 
     private static IEnumerable<long> NoteTicks(MidiStream stream) =>
@@ -484,10 +484,6 @@ public class MusicEngineNeverLateTests
         Committed(stream).OfType<NoteOnEvent>()
             .Where(note => note.Channel == 1 && note.NoteNumber == SegmentMarkerNote)
             .Select(note => note.AbsoluteTime).Distinct().OrderBy(tick => tick).ToArray();
-
-    private static bool IsCarriedHorizon(MidiEvent midiEvent) =>
-        midiEvent is TextEvent text && text.MetaEventType == MetaEventType.TextEvent &&
-        text.Text.Length == 0;
 
     /// The first tick of music from a follow-up generator, which writes notes nothing else does.
     private static long FirstTickOfTheNewMusic(MidiStream stream)

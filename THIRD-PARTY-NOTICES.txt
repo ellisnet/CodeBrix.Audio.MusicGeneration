@@ -105,3 +105,11 @@ of it produces.
 ================================================================================
 
 END OF THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+
+MuseCoco synthetic integration test fixtures (not shipped in the NuGet)
+===================================================================
+Assets/MuseCoco in the test project contains synthetic ONNX graphs from
+CodeBrix.Ollama, MuseCoco schema/vocabulary (Microsoft, MIT), and BERT WordPiece
+vocabulary (Google / Hugging Face, Apache-2.0). Provenance, hashes and full
+license texts are beside the fixtures. No publisher checkpoint weights ship.

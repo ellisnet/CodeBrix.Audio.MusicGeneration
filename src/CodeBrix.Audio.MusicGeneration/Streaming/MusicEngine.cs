@@ -1156,7 +1156,7 @@ internal sealed class MusicEngine : IDisposable
 
         // Settled silence is settled music. Without this the timeline's horizon would stop at the
         // last note before a long rest, and a player would call that starvation.
-        stream.Append(new TextEvent(string.Empty, MetaEventType.TextEvent, throughTick));
+        stream.AdvanceHorizon(throughTick);
     }
 
     private long WholeSegmentLimit()

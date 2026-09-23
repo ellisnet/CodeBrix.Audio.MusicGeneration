@@ -34,7 +34,7 @@ namespace CodeBrix.Audio.MusicGeneration.Models;
 /// CONSTRUCTING AND REGISTERING LOAD NOTHING. No file is opened until <see cref="PreloadAsync"/>
 /// or the first <see cref="GenerateAsync"/>; the model then STAYS loaded and serves every later
 /// segment, and <see cref="Release"/> gives the memory back and leaves the generator registered.
-/// The four-bit bundle holds a little over a hundred megabytes once loaded.
+/// Reduced model files do not bound runtime memory: inference state and temporary buffers can be much larger.
 /// </para>
 /// <para>
 /// A MODEL IS NOT ONE FILE. This one is a configuration and two graphs, and they are reached
