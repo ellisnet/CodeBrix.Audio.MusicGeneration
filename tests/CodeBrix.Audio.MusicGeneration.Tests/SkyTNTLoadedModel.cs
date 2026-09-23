@@ -1,5 +1,6 @@
 using System;
 using CodeBrix.Audio.MusicGeneration.Models;
+using CodeBrix.Audio.MusicGeneration.SkyTNT;
 
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
@@ -9,7 +10,7 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// <remarks>
 /// LOADING IS THE EXPENSIVE PART. xUnit builds a test class once per test, so a generator built in
 /// the constructor would load the model again for every test in it; a class fixture is built once.
-/// The generator is null when the bundle variable is not set, and every test in the class skips.
+/// The published SkyTNT package supplies the copied bundle; these short tests run in the ordinary suite.
 /// </remarks>
 public sealed class SkyTNTLoadedModel : IDisposable
 {
@@ -18,11 +19,9 @@ public sealed class SkyTNTLoadedModel : IDisposable
 
     /// <summary>Builds the generator, without loading anything.</summary>
     public SkyTNTLoadedModel() =>
-        Generator = SkyTNTModelBundle.IsAvailable
-            ? new SkyTNTMusicGenerator(SkyTNTLiveTests.Name, SkyTNTModelBundle.Directory, Options())
-            : null;
+        Generator = new SkyTNTMusicGenerator(SkyTNTLiveTests.Name, SkyTNTModel.ModelDirectory, Options());
 
-    /// <summary>The generator, or null when there is no bundle to point it at.</summary>
+    /// <summary>The generator backed by the published model package's copied bundle.</summary>
     public SkyTNTMusicGenerator Generator { get; }
 
     /// <summary>The settings every live test's generator is built with.</summary>

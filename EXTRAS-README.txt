@@ -23,11 +23,13 @@ MAINTAINER-README.txt (TESTING).
 
 It is also the library's first CONSUMER, and it is written that way on purpose:
 it registers an instrument library from CodeBrix.Audio.ModestSynth and the Opus
-encoder from CodeBrix.Audio.Opus, exactly as an application would. Neither is a
-dependency of the shipped package, and neither may become one.
+encoder from CodeBrix.Audio.Opus, exactly as an application would. The test project
+also references both model packages and runs short integration tests from their
+copied assets, without staging-path variables. Opus and the model packages are test
+references; the shipped library retains only Audio, ModestSynth and ModelRunner.
 
 A few of its tests are opt-in behind an environment variable, because they make
-sound, hold the audio device, need a model on disk, take minutes or write
+sound, hold the audio device, need a caller-staged model, take minutes or write
 hundreds of megabytes: the variables, and what each group needs, are listed in
 MAINTAINER-README.txt. An ordinary `dotnet test` skips them, saying why.
 

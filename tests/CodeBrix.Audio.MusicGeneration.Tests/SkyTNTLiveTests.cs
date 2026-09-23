@@ -8,6 +8,7 @@ using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
 using CodeBrix.Audio.MusicGeneration.Rendition;
+using CodeBrix.Audio.MusicGeneration.SkyTNT;
 using SilverAssertions;
 using SilverAssertions.Collections;
 using SilverAssertions.Numeric;
@@ -17,14 +18,14 @@ using Xunit;
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
 /// <summary>
-/// The tests that really load the SkyTNT model and really generate music. Opt in by setting
-/// CODEBRIX_AUDIO_MUSICGEN_SKYTNT_BUNDLE to the folder holding the bundle; skipped otherwise.
+/// The tests that load the published SkyTNT package's copied bundle and generate music.
+/// They run in the ordinary suite without a staging-path environment variable.
 /// </summary>
 /// <remarks>
 /// <para>
 /// EVERY ONE OF THEM IS SHORT - a few dozen events - because a model writes music at processor
 /// speed and a suite is run over and over. They make no sound: the audible one is in
-/// <see cref="SkyTNTAudibleTests"/>, behind a second gate.
+/// <see cref="SkyTNTAudibleTests"/>, behind its playback opt-in.
 /// </para>
 /// <para>
 /// THE MODEL IS LOADED ONCE FOR THE WHOLE CLASS and released when it is finished with, because
@@ -59,8 +60,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task the_model_loads_from_a_folder_and_says_so()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         await generator.PreloadAsync(TestContext.Current.CancellationToken);
 
@@ -72,10 +71,8 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task the_model_loads_from_a_map_of_files_too()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - the route a store that keeps its files under digests takes
-        using var byPath = new SkyTNTMusicGenerator("SkyTNTByPath", SkyTNTModelBundle.Files(),
+        using var byPath = new SkyTNTMusicGenerator("SkyTNTByPath", SkyTNTModel.ResolveFiles(),
             Options());
 
         //Act
@@ -88,10 +85,8 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task releasing_gives_the_memory_back_and_the_next_request_loads_it_again()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange
-        using var reloaded = new SkyTNTMusicGenerator("SkyTNTReload", SkyTNTModelBundle.Directory,
+        using var reloaded = new SkyTNTMusicGenerator("SkyTNTReload", SkyTNTModel.ModelDirectory,
             Options());
 
         await reloaded.PreloadAsync(TestContext.Current.CancellationToken);
@@ -110,10 +105,8 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_request_naming_a_different_thread_count_reloads_the_model_rather_than_ignoring_it()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange
-        using var threaded = new SkyTNTMusicGenerator("SkyTNTThreads", SkyTNTModelBundle.Directory,
+        using var threaded = new SkyTNTMusicGenerator("SkyTNTThreads", SkyTNTModel.ModelDirectory,
             Options());
 
         await threaded.PreloadAsync(TestContext.Current.CancellationToken);
@@ -133,8 +126,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_short_pass_writes_music_at_segment_relative_ticks()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var produced = await Pull(generator, Fresh());
 
@@ -148,8 +139,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task every_channel_is_one_to_sixteen()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var produced = await Pull(generator, Fresh());
 
@@ -164,8 +153,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task no_event_ever_arrives_at_or_before_a_tick_already_announced_as_settled()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var produced = await Pull(generator, Fresh());
 
@@ -190,8 +177,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_pass_ends_on_a_bar_line()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var produced = await Pull(generator, Fresh());
 
@@ -208,8 +193,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_seeded_generation_is_reproducible()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var first = await Pull(generator, Fresh());
         var second = await Pull(generator, Fresh());
@@ -221,8 +204,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_different_seed_writes_different_music()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange
         var other = Fresh();
         other.Seed = 20260921;
@@ -238,8 +219,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_continuation_starts_after_the_tail_and_re_emits_none_of_it()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - a first pass, turned into the tail the engine would hand over
         var first = await Pull(generator, Fresh());
         var tailTicks = 4L * 4L * Resolution;
@@ -271,8 +250,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_follow_up_prompt_over_one_generator_hands_the_model_over_to_the_new_music()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - ONE generator, the way an application registers one, and a session on it
         TestInstrumentLibraries.GeneralMidi();
         MusicGeneratorRegistry.Register(generator);
@@ -329,8 +306,6 @@ public class SkyTNTLiveTests : IClassFixture<SkyTNTLoadedModel>
     [Fact]
     public async Task a_specified_generator_renders_music_that_is_not_silence()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - the device-less road: the application owns its audio output
         TestInstrumentLibraries.GeneralMidi();
         MusicGeneratorRegistry.Register(generator);

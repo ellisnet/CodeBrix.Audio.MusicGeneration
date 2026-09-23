@@ -8,9 +8,11 @@ using System.Threading.Tasks;
 using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
+using CodeBrix.Audio.MusicGeneration.MuPT;
 using CodeBrix.Audio.MusicGeneration.Presets;
 using CodeBrix.Audio.MusicGeneration.Rendering;
 using CodeBrix.Audio.MusicGeneration.Rendition;
+using CodeBrix.Audio.MusicGeneration.SkyTNT;
 using CodeBrix.Audio.MusicGeneration.Streaming;
 using CodeBrix.Audio.Wave;
 using SilverAssertions;
@@ -28,12 +30,12 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// GATED BY TIME AND BY SIZE, and by both model variables. It renders about twenty-five minutes of
-/// audio and writes a few hundred megabytes. Opt in with CODEBRIX_AUDIO_RUN_LISTENING_RENDERS=1.
+/// GATED BY TIME AND BY SIZE. Both models use their published packages. About twenty-five
+/// minutes of audio and a few hundred megabytes are written. Opt in with
+/// CODEBRIX_AUDIO_RUN_LISTENING_RENDERS=1.
 /// </para>
 /// <code>
 /// CODEBRIX_AUDIO_RUN_LISTENING_RENDERS=1 \
-///   CODEBRIX_AUDIO_MUSICGEN_MUPT_MODEL=... CODEBRIX_AUDIO_MUSICGEN_SKYTNT_BUNDLE=... \
 ///   dotnet tests/CodeBrix.Audio.MusicGeneration.Tests/bin/Release/net10.0/CodeBrix.Audio.MusicGeneration.Tests.dll \
 ///   -class "CodeBrix.Audio.MusicGeneration.Tests.ListeningRenderTests"
 /// </code>
@@ -76,7 +78,7 @@ public class ListeningRenderTests : IDisposable
         Environment.GetEnvironmentVariable(VariableName) == "1";
 
     private const string SkipReason =
-        "Set " + VariableName + "=1, with both model variables, to write the listening renders.";
+        "Set " + VariableName + "=1 to write the listening renders.";
 
     // THE PASS LENGTHS THE SEAM RENDERS USE, AND WHY THEY ARE NOT THE DEFAULTS. A default SkyTNT
     // pass is about a hundred seconds of music and a default MuPT pass thirty to sixty, so a
@@ -102,13 +104,9 @@ public class ListeningRenderTests : IDisposable
         MusicGeneratorRegistry.ResetForTesting();
         MusicRenditionRegistry.ResetForTesting();
 
-        mupt = MuPTModelFile.IsAvailable
-            ? new MuPTMusicGenerator("MuPTListening", MuPTModelFile.Path)
-            : null;
+        mupt = new MuPTMusicGenerator("MuPTListening", MuPTModel.ModelPath);
 
-        skytnt = SkyTNTModelBundle.IsAvailable
-            ? new SkyTNTMusicGenerator("SkyTNTListening", SkyTNTModelBundle.Directory)
-            : null;
+        skytnt = new SkyTNTMusicGenerator("SkyTNTListening", SkyTNTModel.ModelDirectory);
     }
 
     /// <summary>Gives both models' memory back when the class is finished with them.</summary>
@@ -122,8 +120,6 @@ public class ListeningRenderTests : IDisposable
     public async Task the_listening_set_is_written_with_an_index_of_every_seam()
     {
         Assert.SkipUnless(Enabled, SkipReason);
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         //Arrange
         TestInstrumentLibraries.GeneralMidi();
@@ -218,7 +214,6 @@ public class ListeningRenderTests : IDisposable
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable(ShortPassVariableName) == "1",
             "Set " + ShortPassVariableName + "=1 with the SkyTNT model bundle to write the 60-event comparisons.");
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         TestInstrumentLibraries.GeneralMidi();
 
@@ -254,7 +249,6 @@ public class ListeningRenderTests : IDisposable
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable(MiddlePassVariableName) == "1",
             "Set " + MiddlePassVariableName + "=1 with the SkyTNT model bundle to write the 120-event comparisons.");
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         TestInstrumentLibraries.GeneralMidi();
 
@@ -301,7 +295,6 @@ public class ListeningRenderTests : IDisposable
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable(ThreeHundredPassVariableName) == "1",
             "Set " + ThreeHundredPassVariableName + "=1 with the SkyTNT model bundle to time the 300-event render.");
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         TestInstrumentLibraries.GeneralMidi();
 
@@ -341,7 +334,6 @@ public class ListeningRenderTests : IDisposable
     {
         Assert.SkipUnless(Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_RUN_FOLLOWUP_CHECK") == "1",
             "Set CODEBRIX_AUDIO_RUN_FOLLOWUP_CHECK=1 to reproduce the MuPT follow-up render with timing evidence.");
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
         TestInstrumentLibraries.GeneralMidi();
         var folder = Path.Combine(ListeningFolder(), "followup-check");
         Directory.CreateDirectory(folder);

@@ -201,38 +201,25 @@ Four concurrent Release suites on a deliberately loaded machine is the pattern
 that found every flaky test this repository has had; three sequential runs found
 none of them.
 
+PUBLISHED MODEL TEST ASSETS
+The test project references MuPT 1.0.266.257 and SkyTNT 1.0.266.271. Their NuGet
+buildTransitive targets copy models and notices to separate Models/<repo> folders
+below the test output directory. MuPTLiveTests, SkyTNTLiveTests and PresetLiveTests
+run in the ordinary suite through MuPTModel.ModelPath, SkyTNTModel.ModelDirectory
+and SkyTNTModel.ResolveFiles(). No staging-path variables or availability skips
+remain; missing copied artifacts fail the integration tests. Passes stay short
+and fixtures reuse a loaded generator per class. Only the test project references
+the model packages; shipping dependencies remain Audio, ModestSynth and ModelRunner.
+
 THE GATED TESTS - all opt-in through an environment variable, all run
 deliberately and by themselves:
 
   CODEBRIX_AUDIO_RUN_PLAYBACK_TESTS=1
-      MusicSessionAudibleTests, and - with the model variables below set too -
-      SkyTNTAudibleTests and MuPTAudibleTests. OPENS THE AUDIO DEVICE AND MAKES
+      MusicSessionAudibleTests, MuPTAudibleTests and SkyTNTAudibleTests.
+      OPENS THE AUDIO DEVICE AND MAKES
       SOUND, for minutes at a time. Needs a working audio output and somebody listening; it proves the
       device path and nothing else can. Never run two of these at once, and
       never alongside another agent's audible run.
-
-  CODEBRIX_AUDIO_MUSICGEN_SKYTNT_BUNDLE=<folder>
-      SkyTNTLiveTests, the SkyTNT half of PresetLiveTests, and the second gate
-      on SkyTNTAudibleTests, ModelDoneCriterionTests and
-      ListeningRenderTests. The folder
-      holds the SkyTNT bundle - config.json, model_base.onnx, model_token.onnx.
-      NO PATH OUTSIDE THIS REPOSITORY IS WRITTEN DOWN ANYWHERE IN IT: a model is
-      hundreds of megabytes, it is not in the repository, and the variable is
-      the only road to one. Without it every live test SKIPS and says so. The
-      live tests are short on purpose - a few dozen events each - and the model
-      is loaded ONCE for the class through a fixture, because loading is the
-      expensive part. When the model ships as a package these tests are
-      repointed at the package and this variable is retired.
-
-  CODEBRIX_AUDIO_MUSICGEN_MUPT_MODEL=<file>
-      MuPTLiveTests, the MuPT half of PresetLiveTests, and the second gate on
-      MuPTAudibleTests, ModelDoneCriterionTests and ListeningRenderTests.
-      The path of a MuPT
-      GGUF FILE - one file, because the tokenizer is inside it. The same rule as
-      the bundle above: no path outside this repository is written down anywhere
-      in it, and without the variable every live test SKIPS and says so. The
-      live tests write a few bars each and the model is loaded ONCE for the
-      class through a fixture.
 
   CODEBRIX_AUDIO_RUN_DEFAULT_INSTRUMENT_TESTS=1
       DefaultInstrumentLibraryTests. Asserts on the DEFAULT instrument library,
@@ -241,8 +228,8 @@ deliberately and by themselves:
       suite.
 
   CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1
-      LongRenderTests, and - WITH BOTH MODEL VARIABLES SET as well -
-      ModelDoneCriterionTests, which is the plan's own done criterion with a
+      LongRenderTests and ModelDoneCriterionTests, using the packaged models.
+      These prove the done criterion with a
       real model behind it: each model streams through a session while it is
       still generating, and six minutes twenty-five seconds of each model's
       music with a fade comes out as a .wav and as a .opus of exactly that
@@ -251,7 +238,7 @@ deliberately and by themselves:
       tests/.../bin/<config>/net10.0/render-output, and deletes what it wrote.
 
   CODEBRIX_AUDIO_RUN_LISTENING_RENDERS=1
-      ListeningRenderTests, WITH BOTH MODEL VARIABLES. It writes the listening
+      ListeningRenderTests. It writes the listening
       set a person actually sits down with: every preset for about a minute
       through "ModestSynthGm" with its suggested voicing, the three accepted
       electronica presets twice with different seeds, A SEAM SET in which each

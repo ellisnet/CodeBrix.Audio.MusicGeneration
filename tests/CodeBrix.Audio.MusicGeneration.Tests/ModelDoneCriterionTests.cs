@@ -4,9 +4,11 @@ using System.Globalization;
 using System.Threading.Tasks;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
+using CodeBrix.Audio.MusicGeneration.MuPT;
 using CodeBrix.Audio.MusicGeneration.Presets;
 using CodeBrix.Audio.MusicGeneration.Rendering;
 using CodeBrix.Audio.MusicGeneration.Rendition;
+using CodeBrix.Audio.MusicGeneration.SkyTNT;
 using CodeBrix.Audio.Opus;
 using CodeBrix.Audio.Wave;
 using SilverAssertions;
@@ -23,9 +25,9 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// GATED BY TIME, and by the model variables. It generates and synthesizes more than twenty-five
-/// minutes of audio across the four long renders. Opt in with
-/// CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1 and both model variables.
+/// GATED BY TIME. Both models use their published packages.
+/// It generates and synthesizes more than twenty-five minutes of audio across the four long
+/// renders. Opt in with CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1.
 /// </para>
 /// <para>
 /// IT MAKES NO SOUND. The streaming half owns its own audio output and reads the samples into
@@ -44,7 +46,7 @@ public class ModelDoneCriterionTests : IDisposable
         Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS") == "1";
 
     private const string SkipReason =
-        "Set CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1, with both model variables, to run the " +
+        "Set CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1 to run the " +
         "renders that take minutes and write hundreds of megabytes.";
 
     private readonly MuPTMusicGenerator mupt;
@@ -63,13 +65,9 @@ public class ModelDoneCriterionTests : IDisposable
         MusicGeneratorRegistry.ResetForTesting();
         MusicRenditionRegistry.ResetForTesting();
 
-        mupt = MuPTModelFile.IsAvailable
-            ? new MuPTMusicGenerator("MuPTDefaults", MuPTModelFile.Path)
-            : null;
+        mupt = new MuPTMusicGenerator("MuPTDefaults", MuPTModel.ModelPath);
 
-        skytnt = SkyTNTModelBundle.IsAvailable
-            ? new SkyTNTMusicGenerator("SkyTNTDefaults", SkyTNTModelBundle.Directory)
-            : null;
+        skytnt = new SkyTNTMusicGenerator("SkyTNTDefaults", SkyTNTModel.ModelDirectory);
     }
 
     /// <summary>Gives both models' memory back when the class is finished with them.</summary>
@@ -83,7 +81,6 @@ public class ModelDoneCriterionTests : IDisposable
     public async Task a_registered_and_specified_MuPT_plays_while_it_is_still_generating()
     {
         Assert.SkipUnless(LongRendersEnabled, SkipReason);
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
 
         await PlaysWhileItGenerates(mupt, MuPTPresets.WaltzDuetInAMinor,
             MuPTMusicGenerator.MuPTFamily);
@@ -93,7 +90,6 @@ public class ModelDoneCriterionTests : IDisposable
     public async Task a_registered_and_specified_SkyTNT_plays_while_it_is_still_generating()
     {
         Assert.SkipUnless(LongRendersEnabled, SkipReason);
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         await PlaysWhileItGenerates(skytnt, SkyTNTPresets.ClubArrangement,
             SkyTNTMusicGenerator.SkyTNTFamily);
@@ -103,7 +99,6 @@ public class ModelDoneCriterionTests : IDisposable
     public async Task six_minutes_twenty_five_seconds_of_MuPT_is_exactly_that_long()
     {
         Assert.SkipUnless(LongRendersEnabled, SkipReason);
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
 
         await SixTwentyFive(mupt, MuPTPresets.WaltzDuetInAMinor, "mupt");
     }
@@ -112,7 +107,6 @@ public class ModelDoneCriterionTests : IDisposable
     public async Task six_minutes_twenty_five_seconds_of_SkyTNT_is_exactly_that_long()
     {
         Assert.SkipUnless(LongRendersEnabled, SkipReason);
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
 
         await SixTwentyFive(skytnt, SkyTNTPresets.ClubArrangement, "skytnt");
     }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using CodeBrix.Audio.ModestSynth;
 using CodeBrix.Audio.MusicGeneration.Models;
+using CodeBrix.Audio.MusicGeneration.MuPT;
 using CodeBrix.Audio.MusicGeneration.Rendition;
 using SilverAssertions;
 using SilverAssertions.Numeric;
@@ -17,9 +18,8 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// TWO GATES, because it needs two things. CODEBRIX_AUDIO_RUN_PLAYBACK_TESTS=1 opens the audio
-/// device, and CODEBRIX_AUDIO_MUSICGEN_MUPT_MODEL says where the model is; without either it skips
-/// and says which one is missing.
+/// CODEBRIX_AUDIO_RUN_PLAYBACK_TESTS=1 opts in to opening the audio device. The published
+/// MuPT package supplies the model; no model-path variable is needed.
 /// </para>
 /// <para>
 /// IT IS FOR A PURPOSE, not for a suite: what a test can assert is that the transport really ran,
@@ -28,7 +28,7 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// run is for.
 /// </para>
 /// <code>
-/// CODEBRIX_AUDIO_RUN_PLAYBACK_TESTS=1 CODEBRIX_AUDIO_MUSICGEN_MUPT_MODEL=/path/to/model.gguf \
+/// CODEBRIX_AUDIO_RUN_PLAYBACK_TESTS=1 \
 ///   dotnet tests/CodeBrix.Audio.MusicGeneration.Tests/bin/Release/net10.0/CodeBrix.Audio.MusicGeneration.Tests.dll \
 ///   -class "CodeBrix.Audio.MusicGeneration.Tests.MuPTAudibleTests"
 /// </code>
@@ -62,12 +62,11 @@ public class MuPTAudibleTests
     public async Task plays_half_a_minute_of_the_waltz_duet_out_loud_while_it_is_still_being_written()
     {
         Assert.SkipUnless(PlaybackEnabled, PlaybackSkipReason);
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
 
         //Arrange - the whole road, exactly as an application would write it
         GeneralMidiInstrumentLibrary.Register();
 
-        using var generator = new MuPTMusicGenerator(Name, MuPTModelFile.Path);
+        using var generator = new MuPTMusicGenerator(Name, MuPTModel.ModelPath);
 
         MusicGeneratorRegistry.Register(generator);
 

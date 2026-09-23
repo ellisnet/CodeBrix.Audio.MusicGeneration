@@ -1,5 +1,6 @@
 using System;
 using CodeBrix.Audio.MusicGeneration.Models;
+using CodeBrix.Audio.MusicGeneration.MuPT;
 
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
@@ -9,7 +10,7 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// <remarks>
 /// LOADING IS THE EXPENSIVE PART. xUnit builds a test class once per test, so a generator built in
 /// the constructor would load the model again for every test in it; a class fixture is built once.
-/// The generator is null when the model variable is not set, and every test in the class skips.
+/// The published MuPT package supplies the copied GGUF; these short tests run in the ordinary suite.
 /// </remarks>
 public sealed class MuPTLoadedModel : IDisposable
 {
@@ -18,11 +19,9 @@ public sealed class MuPTLoadedModel : IDisposable
 
     /// <summary>Builds the generator, without loading anything.</summary>
     public MuPTLoadedModel() =>
-        Generator = MuPTModelFile.IsAvailable
-            ? new MuPTMusicGenerator(MuPTLiveTests.Name, MuPTModelFile.Path, Options())
-            : null;
+        Generator = new MuPTMusicGenerator(MuPTLiveTests.Name, MuPTModel.ModelPath, Options());
 
-    /// <summary>The generator, or null when there is no model to point it at.</summary>
+    /// <summary>The generator backed by the published model package's copied GGUF.</summary>
     public MuPTMusicGenerator Generator { get; }
 
     /// <summary>The settings every live test's generator is built with.</summary>

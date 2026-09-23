@@ -7,6 +7,7 @@ using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
 using CodeBrix.Audio.MusicGeneration.Presets;
 using CodeBrix.Audio.MusicGeneration.Rendition;
+using CodeBrix.Audio.MusicGeneration.SkyTNT;
 using SilverAssertions;
 using SilverAssertions.Collections;
 using SilverAssertions.Numeric;
@@ -21,7 +22,7 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Opt in by setting the model variables; each half of the class skips on its own, saying why.
+/// Both models use their published packages and run in the ordinary suite.
 /// EVERY PASS HERE IS SHORT - a few bars or a few dozen events - because a suite is run over and
 /// over. Nothing here makes a sound: the audio goes to arrays this test reads.
 /// </para>
@@ -63,8 +64,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [InlineData("WaltzDuetInAMinor")]
     public async Task a_MuPT_preset_writes_a_few_bars_of_music(string name)
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange
         var preset = MuPTPresets.Find(name);
         var request = preset.CreateRequest();
@@ -86,8 +85,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [InlineData("AmbientElectronica")]
     public async Task a_SkyTNT_preset_writes_a_few_dozen_events(string name)
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange
         var request = SkyTNTPresets.Find(name).CreateRequest();
 
@@ -104,11 +101,9 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [Fact]
     public async Task a_preset_that_asks_for_no_percussion_writes_none()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - the generator is built WITH a kit, and the preset asks for none
         using var generator = new SkyTNTMusicGenerator("SkyTNTNoKit",
-            SkyTNTModelBundle.Directory,
+            SkyTNTModel.ModelDirectory,
             new SkyTNTGeneratorOptions
             {
                 MaximumEventsPerPass = SkyTNTLoadedModel.ShortPass, DrumKit = 0
@@ -133,8 +128,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [Fact]
     public async Task a_preset_that_asks_for_a_kit_gets_percussion()
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Arrange - the generator is built with NO kit, and the preset asks for one
         var request = SkyTNTPresets.FourOnTheFloor.CreateRequest();
 
@@ -162,8 +155,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [Fact]
     public async Task a_voice_count_of_two_really_comes_back_as_two_parts()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange - an intent and nothing else: no notation is written by the caller at all
         var request = new MusicRequest { Seed = 20260921 };
 
@@ -197,8 +188,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [Fact]
     public async Task the_best_rated_MuPT_preset_renders_two_parts_that_are_not_silence()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange
         var preset = MuPTPresets.WaltzDuetInAMinor;
 
@@ -216,8 +205,6 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
     [InlineData("AmbientElectronica")]
     public async Task an_electronica_preset_renders_audio_that_is_not_silence(string name)
     {
-        Assert.SkipUnless(SkyTNTModelBundle.IsAvailable, SkyTNTModelBundle.SkipReason);
-
         //Act
         var rendered = await RenderThrough(skytnt.Generator, SkyTNTPresets.Find(name), 250);
 

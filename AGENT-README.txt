@@ -2421,15 +2421,17 @@ Every feature area above is exercised by a test file:
   StreamingDefaultsTests.cs            every starting number, and the thread
                                        count as a SHARE of whatever machine
                                        runs the test
-  SkyTNTLiveTests.cs / MuPTLiveTests.cs  the real models, a few bars at a time
-                                       (gated by the model variables)
+  MuPTLiveTests.cs                     real MuPT from the model NuGet's copied
+                                       assets, a few bars at a time
+  SkyTNTLiveTests.cs                   real SkyTNT from its model NuGet,
+                                       a few dozen events at a time
   PresetLiveTests.cs                   every preset against the model it was
                                        written for, including a kit asked for
-                                       per request (gated by the model
-                                       variables)
+                                       per request (both model NuGets
+                                       run in the ordinary suite)
   ModelDoneCriterionTests.cs           the plan's own done criterion with a
-                                       model behind it (gated by time AND the
-                                       model variables)
+                                       model behind it (gated by time,
+                                       using both model NuGets)
   ListeningRenderTests.cs              writes the listening set and its index -
                                        every preset, the seam set and a
                                        follow-up per model (gated by

@@ -6,6 +6,7 @@ using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
 using CodeBrix.Audio.MusicGeneration.Models.Internal;
+using CodeBrix.Audio.MusicGeneration.MuPT;
 using CodeBrix.Audio.MusicGeneration.Rendition;
 using SilverAssertions;
 using SilverAssertions.Collections;
@@ -16,14 +17,14 @@ using Xunit;
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
 /// <summary>
-/// The tests that really load the MuPT model and really write music. Opt in by setting
-/// CODEBRIX_AUDIO_MUSICGEN_MUPT_MODEL to the path of a MuPT GGUF file; skipped otherwise.
+/// The tests that load the published MuPT package's copied GGUF and write music.
+/// They run in the ordinary suite without a staging-path environment variable.
 /// </summary>
 /// <remarks>
 /// <para>
 /// EVERY ONE OF THEM IS SHORT - a few bars - because a model writes music at processor speed and a
 /// suite is run over and over. They make no sound: the audible one is in
-/// <see cref="MuPTAudibleTests"/>, behind a second gate.
+/// <see cref="MuPTAudibleTests"/>, behind its playback opt-in.
 /// </para>
 /// <para>
 /// THE MODEL IS LOADED ONCE FOR THE WHOLE CLASS and released when it is finished with, because
@@ -62,8 +63,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task the_model_loads_from_a_file_and_says_so()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Act
         await generator.PreloadAsync(TestContext.Current.CancellationToken);
 
@@ -76,8 +75,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task a_short_pass_writes_a_few_bars_of_the_waltz_duet()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Act
         var produced = await Pull(generator, Duet());
 
@@ -92,8 +89,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task the_incremental_path_agrees_with_one_shot_conversion_on_live_output()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange - a pass, and the text the model really wrote for it
         var produced = await Pull(generator, Duet());
         var text = generator.LastModelText;
@@ -108,8 +103,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task nothing_is_ever_let_out_at_or_before_a_tick_already_announced_as_settled()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Act
         var produced = await Pull(generator, Duet());
 
@@ -133,8 +126,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task a_seeded_generation_writes_the_same_music_twice()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange - something else in between, which leaves the engine's context holding another
         //piece: a seed that only worked on a freshly loaded model would not be worth much.
         var other = Duet();
@@ -155,8 +146,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task another_seed_writes_other_music()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange
         var other = Duet();
 
@@ -173,8 +162,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task a_continuation_carries_the_key_and_the_metre_over_the_seam()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange - a first pass, then the request the engine would make for the next segment
         await Pull(generator, Duet());
 
@@ -203,10 +190,8 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task releasing_gives_the_memory_back_and_the_next_request_loads_it_again()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange
-        using var reloaded = new MuPTMusicGenerator("MuPTReload", MuPTModelFile.Path,
+        using var reloaded = new MuPTMusicGenerator("MuPTReload", MuPTModel.ModelPath,
             MuPTLoadedModel.Options());
 
         await reloaded.PreloadAsync(TestContext.Current.CancellationToken);
@@ -225,10 +210,8 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task a_request_naming_a_different_thread_count_reloads_the_model_rather_than_ignoring_it()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange
-        using var threaded = new MuPTMusicGenerator("MuPTThreads", MuPTModelFile.Path,
+        using var threaded = new MuPTMusicGenerator("MuPTThreads", MuPTModel.ModelPath,
             MuPTLoadedModel.Options());
 
         await threaded.PreloadAsync(TestContext.Current.CancellationToken);
@@ -249,8 +232,6 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
     [Fact]
     public async Task a_specified_generator_renders_two_parts_of_music_that_are_not_silence()
     {
-        Assert.SkipUnless(MuPTModelFile.IsAvailable, MuPTModelFile.SkipReason);
-
         //Arrange - the device-less road: the application owns its audio output
         TestInstrumentLibraries.GeneralMidi();
         MusicGeneratorRegistry.Register(generator);
