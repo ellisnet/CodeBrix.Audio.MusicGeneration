@@ -125,6 +125,11 @@ public sealed class MusicRenderResult
     /// The tick each segment starts at, the first of them included. Every one of them is a BAR
     /// LINE: a continuation never starts mid-bar.
     /// </summary>
+    /// <remarks>
+    /// A CROSSFADED fresh seam - see <see cref="MusicGenerationOptions.SeamCrossfade"/> - is where
+    /// the incoming piece starts, which is before the outgoing piece's last bar line: it is a bar
+    /// line of the INCOMING piece, whose bars are counted from there.
+    /// </remarks>
     public IReadOnlyList<long> SeamTicks => seamTicks;
 
     /// <summary>
@@ -132,6 +137,10 @@ public sealed class MusicRenderResult
     /// <c>MidiFile.Export</c>. It is every segment on one timeline, at the resolution the request
     /// asked for.
     /// </summary>
+    /// <remarks>
+    /// At a crossfaded fresh seam the outgoing piece's last moments overlap the incoming piece, as
+    /// they did in the audio: they are on a track of their own, at the ticks they were written at.
+    /// </remarks>
     public MidiEventCollection Music { get; }
 
     /// <summary>

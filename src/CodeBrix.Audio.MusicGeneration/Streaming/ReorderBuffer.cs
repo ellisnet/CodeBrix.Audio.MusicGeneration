@@ -135,6 +135,23 @@ internal sealed class ReorderBuffer
     }
 
     /// <summary>
+    /// Settles everything still held, because the generation has ENDED and nothing more will ever
+    /// arrive to settle it - normally the generator's own last word does this, but a pass that
+    /// ended without it (it failed, or its stream stopped short) would otherwise hold its last
+    /// events for ever, and the music waiting behind them with them.
+    /// </summary>
+    public void SettleEverythingHeld()
+    {
+        for (var i = 0; i < held.Count; i++)
+        {
+            if (held[i].Tick > settledThroughTick)
+            {
+                settledThroughTick = held[i].Tick;
+            }
+        }
+    }
+
+    /// <summary>
     /// Releases everything the generator has settled, in tick order. Events at a tick beyond the
     /// settled tick stay here until it passes them.
     /// </summary>

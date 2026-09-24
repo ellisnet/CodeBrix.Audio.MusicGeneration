@@ -82,6 +82,9 @@ REPOSITORY LAYOUT
       ActiveMusicSource.cs         what is really making the music
       MusicDiagnostics.cs          the snapshot a game loop reads
       EndOfPiecePolicy.cs          keep generating, or stop
+      SegmentPriming.cs            how a re-prompted segment starts: primed,
+                                   fresh, or taking turns
+      MusicSegmentKind.cs          what kind of segment is generating now
       MusicDeliveryMode.cs         streaming, or a whole segment at a time
       MusicGenerationException.cs  the base of this library's own errors
       EmbeddedMusic/               the four pieces that ship inside the assembly
@@ -94,7 +97,8 @@ REPOSITORY LAYOUT
       Streaming/                   the engine and everything the lifecycle needs
                                    - the reorder and settled buffers, the tempo
                                    map and bar grid, the three hosts, the
-                                   segment and seam bookkeeping, and every
+                                   segment and seam bookkeeping, the seam
+                                   crossfade's plan and mixer, and every
                                    starting number in StreamingDefaults.cs
       Rendering/                   the offline render: its options, the fade,
                                    the progress reports and the result
@@ -459,6 +463,99 @@ NOTES
     final. Every audition tune and five hand-written fixtures fence it, and
     each fixture also proves that the end-of-slice rule would have released a
     note of the wrong length.
+  * A CROSSFADED FRESH SEAM IS THREE PIECES OF WORK, and all of the timing is
+    in MusicEngine.PlaceTheFreshSegmentIfDue. (1) A fresh segment is generated
+    WITHOUT A PLACE (like a follow-up) while the outgoing piece's last music
+    is still being committed. (2) It is placed as soon as it has the whole
+    fade plus its own pre-roll. Until then the commit is held short of the
+    fade, and the DEADLINE is the pump at which the head plus the hold margin
+    (plus StreamingDefaults.FreshSeamDeadlineSlack) would reach the start of the
+    fade - NOT the commit window, which is two pre-rolls wide and left a model
+    about a second to generate the fade when its pass ended with the usual
+    half-a-window lead. At the deadline the fade is shortened to what it has
+    (down to an ordinary hard join at the bar line, which takes nothing off
+    the timeline). Placing it takes the
+    outgoing piece's last moments OFF the timeline (SettledMusicBuffer.TakeFrom)
+    and hands them, timed in frames, to a SeamCrossfadePlan together with a
+    second RenditionVoicer built on the pump thread; the incoming piece starts
+    at the start of the fade with its own tempo, a restated metre (its bars
+    are counted from there) and the carried programs. (3) One tick before it,
+    the commit writes a CUE - a control change on channel 16, controller 119,
+    carrying the plan's number - which SeamCrossfadeMixer, the IMidiSynthesizer
+    the host plays, swallows and switches on. The mixer routes a note-off to
+    the outgoing instruments by key while the outgoing piece still holds that
+    key, mixes the two routers along the fade curve, and lets the outgoing one
+    go when its gain reaches nought. ONE PLAN IS PLACED AT A TIME: the next
+    fresh segment waits until the previous cue has been committed, which it
+    always is before the next fade could begin. The mixer is only built when
+    SeamCrossfade is non-zero, so the default path is the one routing
+    synthesizer, untouched. SILENT OPENING BARS: when - and only when - a fade
+    longer than nothing is really being placed, the incoming segment's whole,
+    settled, note-free opening bars are skipped (SegmentGeneration.
+    SkipLeadingTicks, counted in SkippedLeadingBarCount): notes move earlier,
+    and the tempo, metre, programs and controllers in those bars move to its
+    first tick. Readiness is measured on the music AFTER them. Every hard join
+    returns before this, so a hard join plays them as written. FIRST-USE COST:
+    MusicEngine.PrepareCrossfades runs a practice crossfade through
+    SeamCrossfadeMixer.WarmUp (so the fade path is compiled off the audio
+    thread) and builds the first incoming voicer and renders its router once.
+    In a SESSION it is only asked for at Play: it starts on the first pump
+    after the music has started, on a background thread of its own below
+    normal priority (never the thread pool the generator is pulled from), and
+    the real-time factor is not measured over any interval it touched (bounded
+    by StreamingDefaults.PreparationMeasurementAllowance, 2 s per session, so a
+    slow generator is always still caught), so it
+    can never delay the first sound or tip the stream into segment-at-a-time.
+    Each crossfade takes the spare and builds the next one the same way. An
+    offline render prepares at once, on its own thread. An offline render WAITS for the whole fade by
+    holding its commit short of the fade (MusicEngine.Commit) - and, because a
+    render writes audio far faster than a model writes music and is always
+    right behind it, it also keeps a whole fade of the outgoing pass in hand
+    WHILE that pass is still being written whenever the next segment will be
+    fresh; OfflineRender generates one fade further past the target for it.
+    It puts the
+    outgoing tails back into the MIDI it returns while taking the cues out.
+  * CodeBrix.Audio's MidiStreamSequencer FIRES every event the head has
+    reached in EVERY state, starved included (its "FIRE FIRST" rule), while the
+    head itself only moves once a pre-roll is buffered. So MusicEngine.Commit
+    commits nothing while the host is starved until a whole pre-roll of
+    settled music lies ahead of the head (MayCommitWhileTheHeadWaits) - a
+    FINISHED pass is exempt only when nothing will follow it (Stop, stopped, or
+    given up), never under KeepGenerating; without
+    that, a note at the waiting head's own tick sounded at once and its
+    note-off was not reached until the wait ended - the drone / stuck note of
+    a generator slower than real time.
+  * AN EMPTY PASS (no music settled) under KeepGenerating is retried at the
+    same bar line as a FRESH segment on a new derived seed, with a hard join;
+    StreamingDefaults.MaximumConsecutiveEmptyPasses (3) in a row stops the
+    music with a GenerationError. MuPTPrompt.OpenTheEnd also turns a
+    continuation tail that closes the tune (:|, |], ||) into a plain bar line,
+    because MuPT answers a closed tune with nothing.
+  * THE SESSION TEMPO is applied in MusicEngine.Release (AtTheSessionTempo),
+    before anything else sees the released music, so the settled tempo map, the
+    bar grid, the continuation memory and the timeline only ever see the tempo
+    the music is played at. The decision is taken once per piece
+    (DecideTheTempo) from the tempo in force at its FIRST NOTE - at placement
+    for a crossfaded fresh segment once it has a note waiting (its readiness is
+    then measured at the session tempo), and otherwise at the first release
+    that contains a note: until then everything it releases is held back
+    (SegmentGeneration.TempoPending) and nothing of it is settled. Deciding on a
+    pump before the piece had written anything was the build-6 defect: no tempo
+    was found, the tempo already playing was assumed, and the piece was adopted. Only the first piece and fresh segments
+    (retries included) are touched; a carried piece drops ALL its tempo events
+    and gets the session tempo stated at its start. A hard join's restatement of
+    the tempo already playing is de-duplicated by the ordinary seam rule.
+  * NO WAIT IN THE ENGINE IS UNBOUNDED. A pass that ends without its last word
+    (it failed, or its stream stopped short) has whatever it still holds
+    settled when it ends (ReorderBuffer.SettleEverythingHeld, in Release) -
+    before build 9 one held event kept ContinueOrComplete, and with it an
+    offline render, waiting for ever. A pass that fails part-way is followed by
+    a fresh piece like an empty one (IsRetriedAfterFailure; three bad passes in
+    a row give up with the last failure). A fresh segment at its pull limit is
+    placed with what it has; the session-tempo decision is taken without a
+    note once the pass is over, is not being pulled, or has settled
+    StreamingDefaults.TempoDecisionBars bars without one. The offline
+    keep-a-fade-in-hand cap is lifted once the engine has given up.
   * AN OFFLINE RENDER TURNS THE STREAMING LIFECYCLE OFF IN ONE PLACE - the
     engine's object initializer in Rendering/OfflineRender.cs, where
     KeepsMusicAheadOfTheHead and FallsBackToSegmentAtATime are both set false.

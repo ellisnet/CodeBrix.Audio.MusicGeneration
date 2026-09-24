@@ -29,6 +29,8 @@ GENERAL
 -------
   README.md
       Human-facing overview shown on GitHub and nuget.org.
+  BLUEPRINTS-GeneratingMusic.md
+      How-to recipes, with compiled code, for continuous and rendered-ahead music.
   README-INDEX.txt
       This file.
   THIRD-PARTY-NOTICES.txt

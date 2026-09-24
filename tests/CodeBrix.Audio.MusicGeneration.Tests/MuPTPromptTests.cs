@@ -145,6 +145,54 @@ public class MuPTPromptTests
     }
 
     [Fact]
+    public void a_continuation_of_a_tune_that_ended_on_a_closing_repeat_is_shown_it_open()
+    {
+        //Arrange - the ReelInGMinor case the listening test met: a short tune whose last bar
+        //closes the repeat, which MuPT reads as the end of the tune and answers with nothing
+        const string Header = "X:1<n>L:1/8<n>Q:1/8=200<n>M:4/4<n>K:Gmin<n>";
+        const string Written = Header + "|:\"Gm\" BGdB G2 BA | <|> <|> \"Gm\" G2 dc B3 A | <|> <|> " +
+            "\"Gm\" G2 AG ^F2 GD | <|> <|> \"Gm\" G2 AG G4 :| <|>";
+
+        var request = new MusicRequest { Continuation = new MusicContinuation() };
+
+        //Act
+        var prompt = MuPTPrompt.For(request, new MuPTGeneratorOptions(), Header, Written);
+
+        //Assert - the same music, ending on a plain bar line, so the tune carries on
+        prompt.Text.Should().EndWith("\"Gm\" G2 AG G4 | <|>");
+        prompt.Text.Should().NotContain(":|");
+        prompt.Text.Should().StartWith(Header + "|:");
+    }
+
+    [Theory]
+    [InlineData("a | <|> b :| <|>", "a | <|> b | <|>")]
+    [InlineData("a | <|> b |] <|> <|> ", "a | <|> b | <|> <|> ")]
+    [InlineData("a | <|> b || <|><n>", "a | <|> b | <|><n>")]
+    [InlineData("a | <|> b :|] <|>", "a | <|> b | <|>")]
+    [InlineData("a | <|> b | <|>", "a | <|> b | <|>")]
+    [InlineData("|: a | b :| c | <|>", "|: a | b :| c | <|>")]
+    [InlineData("", "")]
+    public void OpenTheEnd_opens_only_a_bar_line_that_closes_the_tune(string tail, string expected) =>
+        MuPTPrompt.OpenTheEnd(tail).Should().Be(expected);
+
+    [Fact]
+    public void a_callers_own_tail_is_never_opened()
+    {
+        //Arrange
+        const string Header = "X:1<n>L:1/8<n>M:4/4<n>K:C<n>";
+        var request = new MusicRequest
+        {
+            Continuation = new MusicContinuation { ModelNativeTail = "CDEF GABc :| <|>" }
+        };
+
+        //Act
+        var prompt = MuPTPrompt.For(request, new MuPTGeneratorOptions(), Header, null);
+
+        //Assert
+        prompt.Text.Should().EndWith("GABc :| <|>");
+    }
+
+    [Fact]
     public void a_continuation_wins_over_the_opening_the_piece_started_from()
     {
         //Arrange - the engine builds every later segment from the request the piece began with,

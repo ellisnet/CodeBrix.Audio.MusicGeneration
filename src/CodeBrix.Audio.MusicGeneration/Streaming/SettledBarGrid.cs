@@ -112,6 +112,17 @@ internal sealed class SettledBarGrid
         }
     }
 
+    /// <summary>
+    /// Forgets every metre change at or after a tick, which is what happens to the bar lines of
+    /// music that has left the timeline: the metre in force goes back to the last change before it.
+    /// </summary>
+    /// <param name="fromTick">The first tick forgotten.</param>
+    public void DiscardFrom(long fromTick)
+    {
+        changes.RemoveAll(change => change.Tick >= fromTick);
+        current = changes.Count == 0 ? MusicMeter.CommonTime : changes[changes.Count - 1].Meter;
+    }
+
     /// <summary>The bar line at or after a tick.</summary>
     /// <param name="tick">The tick.</param>
     /// <returns>The tick of that bar line.</returns>

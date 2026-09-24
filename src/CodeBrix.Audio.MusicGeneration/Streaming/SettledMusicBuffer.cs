@@ -107,6 +107,49 @@ internal sealed class SettledMusicBuffer
     /// Throws away everything not yet committed. The tempo map is kept: the tempo of the music
     /// already played is a fact, whatever happens to the music that was going to follow it.
     /// </summary>
+    /// <summary>
+    /// Takes every event waiting at or after a tick out of the buffer, in tick order, and hands
+    /// them back. What is before the tick stays exactly where it was.
+    /// </summary>
+    /// <param name="fromTick">The first tick taken.</param>
+    /// <returns>The events taken, in the order they were waiting.</returns>
+    /// <remarks>
+    /// It is how the outgoing piece's last moments leave the timeline at a crossfaded seam: they
+    /// are played beside the incoming piece rather than in front of it.
+    /// </remarks>
+    public IReadOnlyList<MidiEvent> TakeFrom(long fromTick)
+    {
+        var taken = new List<MidiEvent>();
+        var count = waiting.Count;
+
+        for (var i = 0; i < count; i++)
+        {
+            var midiEvent = waiting.Dequeue();
+
+            if (midiEvent.AbsoluteTime >= fromTick)
+            {
+                taken.Add(midiEvent);
+            }
+            else
+            {
+                waiting.Enqueue(midiEvent);
+            }
+        }
+
+        return taken;
+    }
+
+    /// <summary>Everything waiting, in order, without taking any of it.</summary>
+    /// <returns>A copy of what is waiting.</returns>
+    public IReadOnlyList<MidiEvent> Snapshot() => waiting.ToArray();
+
+    /// <summary>
+    /// Forgets every tempo change at or after a tick, so that the music placed there next is timed
+    /// by its own tempo and not by the tempo of music that has left the timeline.
+    /// </summary>
+    /// <param name="fromTick">The first tick forgotten.</param>
+    public void DiscardTempoFrom(long fromTick) => tempoMap.DiscardFrom(fromTick);
+
     public void DiscardUncommitted() => waiting.Clear();
 
     /// <summary>

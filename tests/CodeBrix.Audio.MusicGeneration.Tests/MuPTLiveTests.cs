@@ -33,7 +33,7 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </para>
 /// </remarks>
 [Collection("MusicGeneratorRegistry")]
-public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
+public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>, IAsyncLifetime
 {
     private const int Resolution = 480;
     private const int SampleRate = 44100;
@@ -59,6 +59,35 @@ public class MuPTLiveTests : IClassFixture<MuPTLoadedModel>
 
         generator = loaded.Generator;
     }
+
+    /// <summary>
+    /// Waits for the shared generator to be free before each test. A session test ends by
+    /// disposing its session, which CANCELS the generation it was pulling - but that pass lets go
+    /// of the model on its own task a moment later, and the generator refuses a second generation
+    /// by name while the first still holds it. On a busy machine the next test could otherwise
+    /// start inside that moment and be refused.
+    /// </summary>
+    /// <returns>A task that completes when the generator is free.</returns>
+    public async ValueTask InitializeAsync()
+    {
+        var clock = Stopwatch.StartNew();
+
+        while (generator.IsGenerating)
+        {
+            if (clock.Elapsed > HowLongToWaitForMusic)
+            {
+                throw new InvalidOperationException(
+                    "The shared generator was still writing a piece from an earlier test after " +
+                    HowLongToWaitForMusic + ".");
+            }
+
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+    }
+
+    /// <summary>Nothing to give back: the class fixture owns the generator.</summary>
+    /// <returns>A completed task.</returns>
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task the_model_loads_from_a_file_and_says_so()

@@ -508,11 +508,17 @@ public class MusicSessionLifecycleTests
         var right = new float[SampleRate];
 
         //Act - eight seconds of listening against a generator producing a fifth of real time
+        //a second of audio at a time, and then the clock moved on by that second THROUGH THE
+        //PUMP, timer by timer, letting the pull loop and the generator catch up at every step -
+        //so what the generator has written by each second is the same on every run and every
+        //machine, rather than whatever a thread-pool thread happened to reach
         for (var second = 0; second < 8; second++)
         {
             session.Renderer.Render(left, right);
-            time.Advance(TimeSpan.FromSeconds(1.0));
-            session.Pump();
+
+            var until = time.GetUtcNow() + TimeSpan.FromSeconds(1.0);
+
+            await EnginePump.RunUntilAsync(time, () => time.GetUtcNow() >= until);
         }
 
         var diagnostics = session.Diagnostics;
@@ -524,7 +530,44 @@ public class MusicSessionLifecycleTests
         diagnostics.IsSegmentAtATime.Should().BeTrue();
         diagnostics.LateEventCount.Should().Be(0);
         session.GenerationError.Should().BeNull();
-        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task a_generator_slower_than_real_time_still_falls_back_with_a_crossfade_being_prepared()
+    {
+        //Arrange - the same slow generator, with fresh seams crossfaded, so the engine's own
+        //crossfade preparation starts in the background as soon as the music does
+        var time = new ManualTimeProvider();
+        Register(TestGeneratorName, TestMusic.Bars(16, Resolution), time, 0.2);
+        var options = Options(TestGeneratorName);
+        options.Preroll = TimeSpan.FromSeconds(0.5);
+        options.SegmentPriming = SegmentPriming.Fresh;
+        options.SeamCrossfade = TimeSpan.FromSeconds(1.0);
+
+        using var session = Play(options, time);
+
+        var left = new float[SampleRate];
+        var right = new float[SampleRate];
+
+        //Act
+        for (var second = 0; second < 8; second++)
+        {
+            session.Renderer.Render(left, right);
+
+            var until = time.GetUtcNow() + TimeSpan.FromSeconds(1.0);
+
+            await EnginePump.RunUntilAsync(time, () => time.GetUtcNow() >= until);
+        }
+
+        await session.Engine.CrossfadePreparation.WaitAsync(TimeSpan.FromSeconds(30.0),
+            TestContext.Current.CancellationToken);
+
+        //Assert - preparation ran, and the slow generator was still caught and fallen back from
+        var diagnostics = session.Diagnostics;
+        session.Engine.CrossfadePreparationStarted.Should().BeTrue();
+        diagnostics.RealTimeFactor.Should().BeLessThan(1.0);
+        diagnostics.Mode.Should().Be(MusicDeliveryMode.SegmentAtATime);
+        session.GenerationError.Should().BeNull();
     }
 
     // --- the rig ------------------------------------------------------------------------------

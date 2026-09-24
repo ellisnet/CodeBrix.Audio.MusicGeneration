@@ -352,6 +352,16 @@ public sealed class MuPTMusicGenerator : IMusicGenerator, IDisposable
         }
     }
 
+    /// <summary>
+    /// Whether a generation is holding this instance's model right now. A generation that has been
+    /// cancelled lets go when its pass notices, on its own task and a moment later - which is what
+    /// a caller about to start another one on the same instance may have to wait for.
+    /// </summary>
+    internal bool IsGenerating
+    {
+        get { lock (gate) { return generating; } }
+    }
+
     private void StartOneGeneration()
     {
         lock (gate)

@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeBrix.Audio.Instruments;
+using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Internal;
 using CodeBrix.Audio.MusicGeneration.Rendition;
@@ -68,6 +69,12 @@ internal sealed class OfflineRender
     private readonly List<string> diagnostics = new List<string>();
 
     private RenditionVoicer voicer;
+
+    /// <summary>
+    /// Handed every render's engine as it is built - a seam for a test's watchdog, which reports
+    /// where the engine stands if a render stops making progress. Null in an application.
+    /// </summary>
+    internal static Action<MusicEngine> EngineCreatedForTesting { get; set; }
 
     private OfflineRender(MusicGenerationOptions sessionOptions, MusicRenderOptions renderOptions,
         TimeProvider timeProvider, IMusicGenerator generator, IInstrumentLibrary library,
@@ -196,12 +203,26 @@ internal sealed class OfflineRender
 
         try
         {
+            SeamCrossfadeMixer mixer = null;
+            Func<RenditionVoicer> createVoicer = null;
+
             host.Load(stream, rate =>
             {
                 voicer = new RenditionVoicer(rendition, library, rate, request.InstrumentHints,
                     sessionOptions.MasterVolume);
 
-                return voicer.Router;
+                if (sessionOptions.SeamCrossfade <= TimeSpan.Zero)
+                {
+                    return voicer.Router;
+                }
+
+                // THE SAME CROSSFADE A LIVE SESSION PLAYS, through the same mixer, so a file and a
+                // session sound the same at a fresh seam.
+                createVoicer = () => new RenditionVoicer(rendition, library, rate,
+                    request.InstrumentHints, sessionOptions.MasterVolume);
+                mixer = new SeamCrossfadeMixer(voicer);
+
+                return mixer;
             }, DeliverMessage);
 
             engine = new MusicEngine(generator, request, stream, voicer, host, TimeSpan.Zero,
@@ -218,10 +239,29 @@ internal sealed class OfflineRender
                 FallsBackToSegmentAtATime = false,
                 EndOfPiece = ending == RenderEnding.NaturalStop
                     ? EndOfPiecePolicy.Stop
-                    : EndOfPiecePolicy.KeepGenerating
+                    : EndOfPiecePolicy.KeepGenerating,
+                SegmentPriming = sessionOptions.SegmentPriming,
+                SeamCrossfade = sessionOptions.SeamCrossfade,
+                SeamCrossfadeCurve = sessionOptions.SeamCrossfadeCurve,
+                TempoPolicy = sessionOptions.TempoPolicy,
+                TempoBand = sessionOptions.TempoBand,
+                SessionBeatsPerMinute = sessionOptions.SessionBeatsPerMinute,
+                Mixer = mixer,
+                CreateVoicer = createVoicer,
+                KeepsCrossfadeRecord = true,
+                PreparesInBackground = false
             };
 
+            // A render prepares the crossfade path at once, on this thread: it has no head to protect.
+            engine.PrepareCrossfades();
             engine.CanPull = () => MoreMusicIsWanted(engine);
+
+            var created = EngineCreatedForTesting;
+
+            if (created != null)
+            {
+                created(engine);
+            }
             engine.Start();
             host.Play();
 
@@ -386,12 +426,24 @@ internal sealed class OfflineRender
             diagnostics.Add("No fade was applied: the music ended before the fade would have begun.");
         }
 
+        // What the session tempo did at every piece, so a render shows it.
+        diagnostics.AddRange(engine.TempoDecisions);
+        diagnostics.AddRange(engine.RetriedFailures);
+
+        if (engine.ShortenedCrossfadeCount > 0)
+        {
+            diagnostics.Add(string.Format(CultureInfo.InvariantCulture,
+                "{0} of the fresh seams got a shorter crossfade than the {1:0.###} s asked for, " +
+                "because the incoming piece had too little music when the fade was placed.",
+                engine.ShortenedCrossfadeCount, sessionOptions.SeamCrossfade.TotalSeconds));
+        }
+
         report.Report(MusicRenderStage.Finished, host.FramesWritten, engine.SegmentCount, true);
 
         return new MusicRenderResult(path, extension, host.FramesWritten, rate, ending,
             renderOptions.TargetLength, reachedTarget, FadeApplied(fadeFrames, faded, rate),
             renderOptions.FadeCurve, Source(engine), engine.SegmentCount,
-            SeamTicks(engine), stream.ToMidiEventCollection(), Diagnostics());
+            SeamTicks(engine), MusicOf(engine, stream), Diagnostics(engine));
     }
 
     // RUNS ON THE RENDERING THREAD - which, in a render, is the thread doing the rendering - for
@@ -401,6 +453,13 @@ internal sealed class OfflineRender
     private void DeliverMessage(IMidiSynthesizer synthesizer, int channel, int command, int data1,
         int data2)
     {
+        if (synthesizer is SeamCrossfadeMixer mixer)
+        {
+            mixer.ProcessMidiMessage(channel, command, data1, data2);
+
+            return;
+        }
+
         var current = voicer;
 
         if (current != null)
@@ -421,7 +480,13 @@ internal sealed class OfflineRender
             return true;
         }
 
-        return engine.SettledThroughTime < renderOptions.TargetLength.Value + BeyondTheTarget;
+        // A render that crossfades fresh seams keeps a whole fade of settled music in hand (see
+        // MusicEngine.Commit), so it generates that much further for the file to be reached.
+        var beyond = BeyondTheTarget + (sessionOptions.SeamCrossfade > TimeSpan.Zero
+            ? sessionOptions.SeamCrossfade
+            : TimeSpan.Zero);
+
+        return engine.SettledThroughTime < renderOptions.TargetLength.Value + beyond;
     }
 
     private long FadeFrames(long targetFrames, int rate)
@@ -457,17 +522,73 @@ internal sealed class OfflineRender
         var playing = engine.ActiveGenerator;
 
         return new ActiveMusicSource(playing.Name, playing.Family, playing.Description, library.Name,
-            rendition.Name, voicer.Snapshot());
+            rendition.Name, (engine.Voicer ?? voicer).Snapshot());
     }
 
-    private string[] Diagnostics()
+    private string[] Diagnostics(MusicEngine engine)
     {
         var all = new List<string>(diagnostics);
 
         // Why a part is not what was asked for belongs to the render as much as to the voicing.
-        all.AddRange(voicer.Snapshot().Diagnostics);
+        all.AddRange((engine.Voicer ?? voicer).Snapshot().Diagnostics);
 
         return all.ToArray();
+    }
+
+    // THE MIDI OF WHAT WAS RENDERED. The timeline is most of it; at a crossfaded seam the outgoing
+    // piece's last moments were played beside the timeline rather than on it, so they are put back
+    // - on a track of their own, at the ticks they were written at, overlapping the incoming piece
+    // as they did in the audio - and the cues the engine wrote for the mixer, which are not music,
+    // are taken out.
+    private static MidiEventCollection MusicOf(MusicEngine engine, MidiStream stream)
+    {
+        var music = stream.ToMidiEventCollection();
+        var cues = engine.WrittenCues;
+        var tails = engine.CrossfadedTailEvents;
+
+        if (cues.Count == 0 && tails.Count == 0)
+        {
+            return music;
+        }
+
+        for (var track = 0; track < music.Tracks; track++)
+        {
+            var events = music[track];
+
+            for (var index = events.Count - 1; index >= 0; index--)
+            {
+                for (var cue = 0; cue < cues.Count; cue++)
+                {
+                    if (SeamCrossfadePlan.IsCue(events[index], cues[cue].Key, cues[cue].Value))
+                    {
+                        events.RemoveAt(index);
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (tails.Count > 0)
+        {
+            var track = music.AddTrack();
+
+            for (var index = 0; index < tails.Count; index++)
+            {
+                var midiEvent = tails[index];
+
+                track.Add(midiEvent);
+
+                if (midiEvent is NoteOnEvent note && note.OffEvent != null)
+                {
+                    track.Add(note.OffEvent);
+                }
+            }
+        }
+
+        music.PrepareForExport();
+
+        return music;
     }
 
     private void AbandonTheFile()

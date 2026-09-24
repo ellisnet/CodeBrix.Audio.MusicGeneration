@@ -110,6 +110,24 @@ internal sealed class SettledTempoMap
         }
     }
 
+    /// <summary>
+    /// Forgets every tempo change at or after a tick. The start of the timeline is never forgotten,
+    /// so the map always has a tempo in force.
+    /// </summary>
+    /// <param name="fromTick">The first tick forgotten.</param>
+    public void DiscardFrom(long fromTick)
+    {
+        for (var i = sections.Count - 1; i > 0; i--)
+        {
+            if (sections[i].Tick < fromTick)
+            {
+                return;
+            }
+
+            sections.RemoveAt(i);
+        }
+    }
+
     /// <summary>When a tick happens, measured from the start of the timeline.</summary>
     /// <param name="tick">The tick.</param>
     /// <returns>The moment the music reaches that tick.</returns>

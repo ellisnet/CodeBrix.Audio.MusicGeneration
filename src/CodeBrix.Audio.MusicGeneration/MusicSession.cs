@@ -220,7 +220,8 @@ public sealed class MusicSession : IDisposable
                 var playingGenerator = engine == null ? generator : engine.ActiveGenerator;
 
                 return new ActiveMusicSource(playingGenerator.Name, playingGenerator.Family,
-                    playingGenerator.Description, library.Name, rendition.Name, voicer.Snapshot());
+                    playingGenerator.Description, library.Name, rendition.Name,
+                    VoicerOfTheMusic().Snapshot());
             }
         }
     }
@@ -243,13 +244,18 @@ public sealed class MusicSession : IDisposable
                 if (engine == null)
                 {
                     return new MusicDiagnostics(0, null, MusicDeliveryMode.Streaming, TimeSpan.Zero,
-                        0, 0, 0, 0, null);
+                        0, 0, 0, 0, null, MusicSegmentKind.FirstPiece, 0, 0, 0, 0, 0, 0, null, 0, 0, 0);
                 }
 
                 return new MusicDiagnostics(engine.StarvationGapCount, engine.RealTimeFactor,
                     engine.Mode, engine.Lead, engine.SegmentCount, engine.Stream.LateEventCount,
                     engine.HoldCount, engine.HeldBarCount,
-                    voicer == null ? null : voicer.Snapshot());
+                    voicer == null ? null : VoicerOfTheMusic().Snapshot(),
+                    engine.GeneratingSegmentKind, engine.PrimedSegmentCount,
+                    engine.FreshSegmentCount, engine.CrossfadeCount,
+                    engine.ShortenedCrossfadeCount, engine.SkippedLeadingBarCount,
+                    engine.EmptyPassCount, engine.SessionTempo, engine.CarriedTempoCount,
+                    engine.AdoptedTempoCount, engine.FailedPassCount);
             }
         }
     }
@@ -385,21 +391,52 @@ public sealed class MusicSession : IDisposable
                 ? new RendererMusicHost(options.SampleRate)
                 : (IMusicHost)new DeviceMusicHost();
 
+            SeamCrossfadeMixer mixer = null;
+            Func<RenditionVoicer> createVoicer = null;
+
             host.Load(stream, rate =>
             {
                 voicer = new RenditionVoicer(rendition, library, rate, request.InstrumentHints,
                     options.MasterVolume);
 
-                return voicer.Router;
+                if (options.SeamCrossfade <= TimeSpan.Zero)
+                {
+                    // No crossfade asked for: the one routing synthesizer, exactly as always.
+                    return voicer.Router;
+                }
+
+                // A CROSSFADE NEEDS A SECOND SET OF INSTRUMENTS at every fresh seam, built on the
+                // pump thread over the same library and rendition, at the rate the host settled on.
+                var voicingRendition = rendition;
+                var voicingLibrary = library;
+                var hints = request.InstrumentHints;
+                var volume = options.MasterVolume;
+
+                createVoicer = () => new RenditionVoicer(voicingRendition, voicingLibrary, rate, hints,
+                    volume);
+                mixer = new SeamCrossfadeMixer(voicer);
+
+                return mixer;
             }, DeliverMessage);
 
             engine = new MusicEngine(generator, request, stream, voicer, host, options.Preroll,
                 timeProvider, 0L)
             {
                 GenerateAhead = options.GenerateAhead,
-                EndOfPiece = options.EndOfPiece
+                EndOfPiece = options.EndOfPiece,
+                SegmentPriming = options.SegmentPriming,
+                SeamCrossfade = options.SeamCrossfade,
+                SeamCrossfadeCurve = options.SeamCrossfadeCurve,
+                TempoPolicy = options.TempoPolicy,
+                TempoBand = options.TempoBand,
+                SessionBeatsPerMinute = options.SessionBeatsPerMinute,
+                Mixer = mixer,
+                CreateVoicer = createVoicer
             };
 
+            // Asks for the crossfade path to be made ready. It starts once the music is playing, in
+            // the background: nothing of it is on the way to the first sound.
+            engine.PrepareCrossfades();
             engine.Start();
             host.Play();
             playing = true;
@@ -807,6 +844,15 @@ public sealed class MusicSession : IDisposable
         return copy;
     }
 
+    // The voicer of the music reaching the timeline: the first one, or - after a crossfaded seam -
+    // the incoming piece's. Callers hold the lock and have checked there is a voicer at all.
+    private RenditionVoicer VoicerOfTheMusic()
+    {
+        var engineVoicer = engine == null ? null : engine.Voicer;
+
+        return engineVoicer ?? voicer;
+    }
+
     private void LetGoOfTheLastRun()
     {
         if (engine != null)
@@ -831,6 +877,15 @@ public sealed class MusicSession : IDisposable
     private void DeliverMessage(IMidiSynthesizer synthesizer, int channel, int command, int data1,
         int data2)
     {
+        if (synthesizer is SeamCrossfadeMixer mixer)
+        {
+            // Crossfaded seams: the mixer knows which piece - and so which voicer - a message
+            // belongs to, and does both lines itself.
+            mixer.ProcessMidiMessage(channel, command, data1, data2);
+
+            return;
+        }
+
         var current = voicer;
 
         if (current != null)

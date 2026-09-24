@@ -45,7 +45,10 @@ public sealed class MusicDiagnostics
 {
     internal MusicDiagnostics(int starvationGapCount, double? realTimeFactor, MusicDeliveryMode mode,
         TimeSpan lead, int segmentCount, int lateEventCount, int holdCount, int heldBarCount,
-        MusicVoicing voicing)
+        MusicVoicing voicing, MusicSegmentKind generatingSegmentKind, int primedSegmentCount,
+        int freshSegmentCount, int crossfadeCount, int shortenedCrossfadeCount,
+        int skippedLeadingBarCount, int emptyPassCount, double? sessionTempo, int carriedTempoCount,
+        int adoptedTempoCount, int failedPassCount)
     {
         StarvationGapCount = starvationGapCount;
         RealTimeFactor = realTimeFactor;
@@ -56,6 +59,17 @@ public sealed class MusicDiagnostics
         HoldCount = holdCount;
         HeldBarCount = heldBarCount;
         Voicing = voicing;
+        GeneratingSegmentKind = generatingSegmentKind;
+        PrimedSegmentCount = primedSegmentCount;
+        FreshSegmentCount = freshSegmentCount;
+        CrossfadeCount = crossfadeCount;
+        ShortenedCrossfadeCount = shortenedCrossfadeCount;
+        SkippedLeadingBarCount = skippedLeadingBarCount;
+        EmptyPassCount = emptyPassCount;
+        SessionTempo = sessionTempo;
+        CarriedTempoCount = carriedTempoCount;
+        AdoptedTempoCount = adoptedTempoCount;
+        FailedPassCount = failedPassCount;
     }
 
     /// <summary>
@@ -145,14 +159,112 @@ public sealed class MusicDiagnostics
     /// </summary>
     public MusicVoicing Voicing { get; }
 
+    /// <summary>
+    /// What kind of segment is being generated NOW: the first piece, a segment primed with the
+    /// music so far, a fresh one, or a follow-up prompt. Before the music has started it is
+    /// <see cref="MusicSegmentKind.FirstPiece"/>.
+    /// </summary>
+    /// <remarks>
+    /// It describes the newest generation the engine is pulling from, which is what a listener
+    /// hears NEXT: a primed segment carries on from the music before it, while a fresh one is a new
+    /// piece, and joins it with a hard cut or with a crossfade - see
+    /// <see cref="MusicGenerationOptions.SegmentPriming"/> and
+    /// <see cref="MusicGenerationOptions.SeamCrossfade"/>.
+    /// </remarks>
+    public MusicSegmentKind GeneratingSegmentKind { get; }
+
+    /// <summary>
+    /// Whether the segment being generated now was asked for with the music so far in view. It is
+    /// false for the first piece, for a follow-up prompt and for a fresh segment.
+    /// </summary>
+    public bool GeneratingSegmentIsPrimed => GeneratingSegmentKind == MusicSegmentKind.Primed;
+
+    /// <summary>
+    /// How many of the segments the engine asked for at the end of a pass were PRIMED with the
+    /// music so far. With <see cref="FreshSegmentCount"/> it adds up to every such segment; the
+    /// first piece and follow-up prompts are in neither.
+    /// </summary>
+    public int PrimedSegmentCount { get; }
+
+    /// <summary>
+    /// How many of the segments the engine asked for at the end of a pass were FRESH pieces, with
+    /// nothing of the music so far in view.
+    /// </summary>
+    public int FreshSegmentCount { get; }
+
+    /// <summary>
+    /// How many fresh seams have been CROSSFADED - the outgoing piece fading out while the
+    /// incoming one fades in - including those whose fade was shortened. It stays at nought unless
+    /// <see cref="MusicGenerationOptions.SeamCrossfade"/> is set.
+    /// </summary>
+    public int CrossfadeCount { get; }
+
+    /// <summary>
+    /// How many fresh seams were given a SHORTER crossfade than was asked for, because the
+    /// incoming piece had not generated enough music by the time the outgoing music had to be
+    /// committed. A fade shortened all the way to nothing is a hard join: it is counted here and
+    /// not in <see cref="CrossfadeCount"/>.
+    /// </summary>
+    /// <remarks>
+    /// Shortening is what keeps a crossfade from ever costing the music a gap. A number that keeps
+    /// climbing says the generator is barely keeping up at the seams, which
+    /// <see cref="RealTimeFactor"/> says in seconds; a shorter crossfade asks less of it.
+    /// </remarks>
+    public int ShortenedCrossfadeCount { get; }
+
+    /// <summary>
+    /// How many SILENT OPENING BARS of incoming fresh pieces have been skipped at crossfaded
+    /// seams. A fresh piece that opens with empty bars would otherwise have the outgoing piece fade
+    /// into silence; at a crossfade those bars are skipped so the fade is into the first bar with
+    /// notes. Nothing is ever skipped at a hard join, a primed seam or a follow-up prompt.
+    /// </summary>
+    public int SkippedLeadingBarCount { get; }
+
+    /// <summary>
+    /// How many passes produced NO MUSIC AT ALL and were asked for again as a fresh piece on a new
+    /// seed. Music meant to keep going never ends on an empty pass: only a run of them in a row
+    /// stops it, and then <see cref="MusicSession.GenerationError"/> says so.
+    /// </summary>
+    public int EmptyPassCount { get; }
+
+    /// <summary>
+    /// The session tempo, in beats per minute, that fresh pieces are measured against and - when
+    /// carried - played at. It is null under <see cref="SessionTempoPolicy.Adopt"/>, which keeps
+    /// no session tempo, and null until the first piece has stated one.
+    /// </summary>
+    public double? SessionTempo { get; }
+
+    /// <summary>How many fresh pieces were played at the session tempo instead of their own.</summary>
+    public int CarriedTempoCount { get; }
+
+    /// <summary>
+    /// How many fresh pieces were close enough to the session tempo to keep their own, under
+    /// <see cref="SessionTempoPolicy.CarryOutsideBand"/>.
+    /// </summary>
+    public int AdoptedTempoCount { get; }
+
+    /// <summary>
+    /// How many passes FAILED part-way - the generator threw after it had started - and were
+    /// followed by a fresh piece instead of ending the music. What a failed pass wrote before it
+    /// failed still plays. Only a run of failed or empty passes in a row stops the music, and then
+    /// <see cref="MusicSession.GenerationError"/> carries the last failure.
+    /// </summary>
+    public int FailedPassCount { get; }
+
     /// <summary>Describes the state of the stream in one line, for a log.</summary>
     /// <returns>The line.</returns>
     public override string ToString() =>
         string.Format(CultureInfo.InvariantCulture,
             "{0}: lead {1:0.0} s, real-time factor {2}, {3} segment(s), {4} gap(s), " +
-            "{5} late event(s), {6} hold(s) of {7} bar(s)",
+            "{5} late event(s), {6} hold(s) of {7} bar(s), generating {8}, " +
+            "{9} crossfade(s) ({10} shortened, {11} silent opening bar(s) skipped), " +
+            "{12} empty pass(es) retried, {16} failed pass(es) followed by a fresh piece, " +
+            "session tempo {13}, {14} tempo(s) carried, {15} adopted",
             Mode, Lead.TotalSeconds, DescribeRealTimeFactor(), SegmentCount, StarvationGapCount,
-            LateEventCount, HoldCount, HeldBarCount);
+            LateEventCount, HoldCount, HeldBarCount, GeneratingSegmentKind, CrossfadeCount,
+            ShortenedCrossfadeCount, SkippedLeadingBarCount, EmptyPassCount,
+            SessionTempo.HasValue ? SessionTempo.Value.ToString("0.0", CultureInfo.InvariantCulture) : "none",
+            CarriedTempoCount, AdoptedTempoCount, FailedPassCount);
 
     private string DescribeRealTimeFactor() =>
         RealTimeFactor.HasValue

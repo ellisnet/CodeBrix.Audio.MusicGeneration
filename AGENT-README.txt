@@ -121,6 +121,8 @@ KEY NAMESPACES / USINGS
                                                       // ActiveMusicSource,
                                                       // EndOfPiecePolicy,
                                                       // MusicDeliveryMode,
+                                                      // SegmentPriming,
+                                                      // MusicSegmentKind,
                                                       // IMusicGenerator,
                                                       // MusicGeneratorRegistry,
                                                       // MusicGenerationException
@@ -701,6 +703,16 @@ and every one of them is optional:
       GenerateAhead              how much settled music to keep ahead of the
                                  play head before generation pauses (30 s)
       EndOfPiece                 KeepGenerating (the default) or Stop
+      SegmentPriming             how each re-prompted segment starts: Primed
+                                 (the default), Fresh or Alternate
+      SeamCrossfade              how long the outgoing and incoming pieces
+                                 overlap at a FRESH seam (zero, the default,
+                                 is a hard join)
+      SeamCrossfadeCurve         the crossfade's shape (EqualPower)
+      TempoPolicy                Adopt (the default: every piece keeps its own
+                                 tempo), Carry, or CarryOutsideBand
+      TempoBand                  CarryOutsideBand's tolerance, a fraction (0.15)
+      SessionBeatsPerMinute      a session tempo given up front, or null
       InferenceThreadCount       threads a model may use, or null for its own
                                  conservative default
 
@@ -1081,8 +1093,106 @@ WHAT IS KEPT ACROSS A SEAM, by default:
   * a new segment gets a DIFFERENT seed, derived from the seed you gave and the
     segment number, and exactly the same temperature, top-k and top-p - so the
     music does not repeat itself and does not change its manner either.
+A SESSION TEMPO - TempoPolicy. A model picks a new tempo for every fresh piece,
+so music made of fresh segments can lurch from one pulse to another at every
+seam. Carry plays every FRESH piece at the SESSION TEMPO; CarryOutsideBand lets
+a piece whose opening tempo is within TempoBand (15% by default) of it keep its
+own, and carries the rest. The session tempo is SessionBeatsPerMinute when set,
+else the request's MusicIntent.BeatsPerMinute when set, else the first piece's
+opening tempo; given up front it is imposed on the first piece too.
+  * A CARRIED PIECE KEEPS ITS TICKS: all of its tempo events are dropped (later
+    changes inside it too - it has one tempo) and the session tempo is stated
+    where it starts (the start of a crossfade, or the bar line of a hard join).
+    It is heard a little faster or slower; its bar lines do not move.
+  * Primed segments and follow-up prompts are never touched.
+  * MusicIntent.BeatsPerMinute is a request TO THE GENERATOR, and a generator
+    that does not honour a tempo still refuses it by name at Play - that is
+    unchanged. SessionBeatsPerMinute is never sent to the generator, so it works
+    with any generator.
+  * THE TEMPO A PIECE IS JUDGED BY is the one in force where its FIRST NOTE
+    sounds - not a default stated at its first tick - and the decision waits
+    for that note.
+  * Diagnostics.SessionTempo, CarriedTempoCount and AdoptedTempoCount report it.
+    A file rendered with the same options is carried the same way, and its
+    MusicRenderResult.Diagnostics has one line per piece: the tempo it was
+    written at, and whether it was carried or adopted.
+
+AN EMPTY PASS NEVER ENDS THE MUSIC. A model can answer a request with nothing
+at all. With EndOfPiece = KeepGenerating that segment is asked for again at
+the same bar line as a FRESH piece on a new derived seed (Diagnostics.
+EmptyPassCount counts it); only three empty passes in a row stop the music,
+and then GenerationError says so - IsFinished with a null error never means
+"the model wrote nothing". A pass that FAILS part-way (the generator throws
+after it has started - MuseCoco refuses a piece that needs more than fifteen
+melodic channels) is treated the same way: what it wrote still plays, the next
+piece is fresh, Diagnostics.FailedPassCount counts it, and only a run of three
+failed or empty passes stops the music, with the last failure in
+GenerationError. A follow-up prompt that fails, and a first piece that fails
+before writing anything (a model that will not load), are reported as before.
+A render lists every such failure in its Diagnostics.
+
+SILENCE WHILE IT WAITS. While the play head is waiting for music - at the start,
+or after running dry - nothing is put in front of it until a whole pre-roll of
+settled music is there to play straight through, so a slow generator is heard
+as silence, never as a first note left ringing while the head waits.
+
 WHAT IS NOT PROMISED: that every seam is inaudible. A listener may still hear a
 join where the model changes its mind about the material.
+
+PRIMED OR FRESH - SegmentPriming. Everything above describes a PRIMED segment,
+which is the default. Some models are led so strongly by the bars they are
+shown that a primed segment writes the same material again, and a new seed
+changes nothing audible. Two other choices:
+  * Fresh      every segment is the application's own request again - a new
+               piece in the same character, on a new derived seed when there is
+               a seed - with nothing of the music so far in view. It still
+               starts at a bar line, and the tempo and each part's program
+               carry across the way they do for any seam.
+  * Alternate  primed, fresh, primed, fresh... - the second segment of the
+               music is primed. A follow-up prompt starts the count again.
+A generator that cannot be shown the music so far (one that does not honour
+MusicRequestFeatures.Continuation) starts every segment fresh, whatever the
+option says. Diagnostics.GeneratingSegmentKind says what is being generated now
+(FirstPiece, Primed, Fresh or FollowUp); PrimedSegmentCount and
+FreshSegmentCount count them.
+
+A CROSSFADE AT A FRESH SEAM - SeamCrossfade. A fresh segment is a different
+piece, so by default it cuts in at the bar line. Set SeamCrossfade and the
+incoming piece starts that long BEFORE the outgoing piece's last bar line, on a
+beat when at least a beat fits, while the outgoing piece plays on to its end;
+the two are mixed along SeamCrossfadeCurve (EqualPower keeps the loudness
+steady, StraightLine keeps the sum of the gains at one) and the outgoing
+instruments are let go when the fade is over:
+
+    using var music = new MusicSession(new MusicGenerationOptions
+    {
+        Generator = "MyModel",
+        SegmentPriming = SegmentPriming.Alternate,
+        SeamCrossfade = TimeSpan.FromSeconds(4.0),
+    });
+
+  * ONLY FRESH SEAMS ARE CROSSFADED. Primed seams and follow-up prompts join at
+    a bar line exactly as before.
+  * THE INCOMING PIECE PLAYS THROUGH INSTRUMENTS OF ITS OWN, built from the same
+    instrument library and rendition, because both pieces use the same MIDI
+    channels. It is voiced as a new piece: its bar lines count from where it
+    starts, and a part it never gives a program keeps the program it had.
+  * A FRESH PIECE'S SILENT OPENING BARS ARE SKIPPED AT A CROSSFADE, so the
+    outgoing piece fades into music, not into silence: its first bar with notes
+    starts at the start of the fade, and the tempo, metre and programs in the
+    skipped bars still apply. A hard join - no crossfade asked for, or a fade
+    shortened to nothing - plays those bars as written.
+    Diagnostics.SkippedLeadingBarCount counts them.
+  * IT NEVER COSTS THE MUSIC A GAP. The incoming piece is placed early only
+    once it has generated the whole fade plus its own pre-roll; when it has not
+    by the time the outgoing music must be committed, the fade is SHORTENED -
+    down to a hard join if need be - and Diagnostics.ShortenedCrossfadeCount
+    counts it. CrossfadeCount counts the fades that happened.
+  * A RENDER CROSSFADES THE SAME WAY, through the same mixer. With no play head
+    to protect it waits for the whole fade instead of shortening it, and the
+    MIDI it hands back has both pieces overlapping at each seam.
+  * While the engine is delivering a whole segment at a time, fresh seams are
+    hard joins.
 
 HOW FAR AHEAD IT RUNS. GenerateAhead is ONE setting, measured in SECONDS OF
 MUSIC rather than events or ticks, because the play head moves in time and the
@@ -1211,6 +1321,18 @@ frame:
                          bar line to keep it in front of the head
     HeldBarCount         how many whole bars of rest those holds have cost
     Voicing              what every part that has sounded is playing
+    GeneratingSegmentKind  FirstPiece, Primed, Fresh or FollowUp: what is being
+                         generated now, which is what is heard next
+    GeneratingSegmentIsPrimed  the same question as a bool
+    PrimedSegmentCount / FreshSegmentCount   re-prompted segments of each kind
+    CrossfadeCount       fresh seams that were crossfaded
+    ShortenedCrossfadeCount  fresh seams given less crossfade than asked, for
+                         want of music in time - a fade shortened to nothing
+                         is a hard join and is counted here only
+    SkippedLeadingBarCount  silent opening bars of fresh pieces skipped at
+                         crossfades
+    EmptyPassCount       passes that wrote no music at all and were asked for
+                         again as a fresh piece on a new seed
 
     Console.WriteLine(music.Diagnostics);      // the whole snapshot, one line
 
@@ -2307,8 +2429,8 @@ WHAT THIS PACKAGE DOES NOT DO
   * It does not promise that a join between two segments is inaudible.
   * It does not promise gapless music on a machine that generates slower than it
     plays. It measures that, reports it, and degrades on purpose.
-  * It does not crossfade audio across a seam - not even in a render, where it
-    owns the samples and could.
+  * It does not crossfade a primed seam or a follow-up prompt. Only a FRESH
+    seam is crossfaded, and only when SeamCrossfade is set.
   * It does not ENCODE audio itself. A render produces float samples and hands
     them to whatever writer CodeBrix.Audio's registry has for the extension, so
     the formats you can write are the ones your application has registered.
@@ -2359,6 +2481,11 @@ Every feature area above is exercised by a test file:
                                        generate-ahead window, the
                                        segment-at-a-time fallback and a
                                        follow-up prompt taking over
+  MusicEngineSeamTests.cs              primed, fresh and alternating seams,
+                                       and where a crossfaded seam lands
+  SeamCrossfadeMixerTests.cs           the crossfade frame by frame, and which
+                                       instruments each message reaches
+  MusicSessionCrossfadeTests.cs        a crossfade heard live and rendered
   MusicSessionLifecycleTests.cs        the same, as an application meets it:
                                        follow-up prompts, preload and release,
                                        the thread count and the diagnostics
@@ -2463,11 +2590,21 @@ QUICK REFERENCE CARD
                     .Mode | .IsSegmentAtATime | .Lead
                     .StarvationGapCount | .SegmentCount | .LateEventCount
                     .HoldCount | .HeldBarCount                // rests inserted
+                    .GeneratingSegmentKind | .GeneratingSegmentIsPrimed
+                    .PrimedSegmentCount | .FreshSegmentCount
+                    .CrossfadeCount | .ShortenedCrossfadeCount
+                    .SkippedLeadingBarCount | .EmptyPassCount
+                    .SessionTempo | .CarriedTempoCount | .AdoptedTempoCount
 
     new MusicGenerationOptions {
         Preroll = TimeSpan.FromSeconds(5),             // before it starts
         GenerateAhead = TimeSpan.FromSeconds(30),      // seconds of MUSIC
         EndOfPiece = EndOfPiecePolicy.KeepGenerating,  // or .Stop
+        SegmentPriming = SegmentPriming.Primed,        // | Fresh | Alternate
+        SeamCrossfade = TimeSpan.Zero,                 // fresh seams only
+        SeamCrossfadeCurve = MusicFadeCurve.EqualPower,
+        TempoPolicy = SessionTempoPolicy.Adopt,        // | Carry | CarryOutsideBand
+        TempoBand = 0.15, SessionBeatsPerMinute = null,
         SampleRate = 44100, MasterVolume = 1.0F,       // your output's rate
         InferenceThreadCount = null }                  // the model's default
 

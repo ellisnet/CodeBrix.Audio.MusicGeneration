@@ -77,6 +77,42 @@ internal static class StreamingDefaults
     public static readonly TimeSpan MinimumHoldMargin = TimeSpan.FromMilliseconds(250.0);
 
     /// <summary>
+    /// How much earlier than strictly necessary a fresh segment waiting to be crossfaded is placed
+    /// with whatever it has. The last possible moment is when the head is one hold margin short of
+    /// where the fade would begin; this much slack keeps the decision a few pumps clear of it.
+    /// </summary>
+    /// <remarks>
+    /// WHY THE DEADLINE IS MEASURED FROM THE HEAD AND NOT FROM THE COMMIT WINDOW: a model pass
+    /// usually ends while the generate-ahead window is refilling, with a lead of about HALF of it
+    /// ahead of the head, and the commit window alone is two pre-rolls. A deadline at "the commit
+    /// would reach the fade" left the incoming piece about a second to generate a whole fade plus
+    /// its pre-roll, so the first fresh seam was cut to a hard join almost every time. While a
+    /// fresh segment waits, the commit is held short of the fade instead, and the deadline is
+    /// this much before the head's own safety margin reaches it.
+    /// </remarks>
+    public static readonly TimeSpan FreshSeamDeadlineSlack = TimeSpan.FromSeconds(1.0);
+
+    /// <summary>
+    /// The most generating time, over a whole session, that is left out of the real-time factor
+    /// because the engine's own crossfade preparation was running while it was measured.
+    /// Preparation takes milliseconds; this keeps a slow generator from ever hiding behind it.
+    /// </summary>
+    public static readonly TimeSpan PreparationMeasurementAllowance = TimeSpan.FromSeconds(2.0);
+
+    /// <summary>
+    /// How many passes in a row may produce no music at all before music that is meant to keep
+    /// going gives up - with an error that says so. Each empty pass is asked for again as a fresh
+    /// piece on a new seed.
+    /// </summary>
+    public const int MaximumConsecutiveEmptyPasses = 3;
+
+    /// <summary>
+    /// How many bars of settled music a piece may open with, and no note, before the session-tempo
+    /// decision is taken without waiting for its first note any longer.
+    /// </summary>
+    public const int TempoDecisionBars = 4;
+
+    /// <summary>
     /// The time constant of the real-time factor's moving average, measured in seconds of time
     /// SPENT GENERATING. A model's rate falls as a piece grows, so the figure has to follow the
     /// recent past rather than average the whole session.

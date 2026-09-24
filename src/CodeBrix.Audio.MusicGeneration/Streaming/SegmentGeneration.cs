@@ -28,7 +28,9 @@ namespace CodeBrix.Audio.MusicGeneration.Streaming;
 internal sealed class SegmentGeneration
 {
     private readonly List<GeneratedMusicEvent> waiting = new List<GeneratedMusicEvent>();
-    private readonly SettledTempoMap waitingTempo;
+    private readonly int ticksPerQuarterNote;
+
+    private SettledTempoMap waitingTempo;
 
     private long waitingSettledTick = -1L;
 
@@ -53,6 +55,7 @@ internal sealed class SegmentGeneration
         Reorder = reorder;
         IsContinuation = isContinuation;
         Cancellation = cancellation;
+        this.ticksPerQuarterNote = ticksPerQuarterNote;
         waitingTempo = new SettledTempoMap(ticksPerQuarterNote);
     }
 
@@ -70,6 +73,12 @@ internal sealed class SegmentGeneration
 
     /// <summary>Whether this generation follows music that was already playing.</summary>
     public bool IsContinuation { get; private set; }
+
+    /// <summary>
+    /// What kind of segment this is: the first piece, a primed or a fresh segment the engine asked
+    /// for at the end of a pass, or a follow-up prompt.
+    /// </summary>
+    public MusicSegmentKind Kind { get; set; } = MusicSegmentKind.FirstPiece;
 
     /// <summary>What stops the pull.</summary>
     public CancellationTokenSource Cancellation { get; }
@@ -118,6 +127,200 @@ internal sealed class SegmentGeneration
         {
             waitingSettledTick = item.SettledThroughTick;
         }
+    }
+
+    /// <summary>
+    /// The metre a generation that has not been placed yet states at its very first tick, or null
+    /// when it states none there.
+    /// </summary>
+    public MusicMeter? OpeningMeter
+    {
+        get
+        {
+            for (var i = 0; i < waiting.Count; i++)
+            {
+                if (waiting[i].HasEvent && waiting[i].Event is TimeSignatureEvent signature &&
+                    signature.AbsoluteTime == 0L && signature.Numerator >= 1 &&
+                    signature.Denominator >= 0 && signature.Denominator <= 7)
+                {
+                    return new MusicMeter(signature.Numerator, 1 << signature.Denominator);
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>Whether the session tempo has been stated at this generation's start.</summary>
+    public bool SessionTempoStated { get; set; }
+
+    /// <summary>
+    /// Whether the session-tempo decision has been taken for this generation.
+    /// </summary>
+    public bool TempoDecided { get; set; }
+
+    /// <summary>
+    /// Whether this generation plays at the session tempo: its own tempo events are dropped and the
+    /// session tempo is stated where it starts.
+    /// </summary>
+    public bool CarriesSessionTempo { get; set; }
+
+    /// <summary>
+    /// What a generation has released and the session-tempo decision is holding back, until its
+    /// first note shows what tempo it will sound at.
+    /// </summary>
+    public List<MidiEvent> TempoPending { get; } = new List<MidiEvent>();
+
+    /// <summary>The tempo the piece was written at where it first sounds, once decided.</summary>
+    public int IncomingTempo { get; set; }
+
+    /// <summary>Whether a generation that has not been placed yet holds a note yet.</summary>
+    public bool HasANoteWaiting
+    {
+        get
+        {
+            for (var i = 0; i < waiting.Count; i++)
+            {
+                if (waiting[i].HasEvent && MidiEvent.IsNoteOn(waiting[i].Event))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The tempo in force where a generation that has not been placed yet first sounds: the last
+    /// tempo event at or before its first note, in microseconds per quarter note - or null when it
+    /// states none there.
+    /// </summary>
+    public int? TempoAtTheFirstNote
+    {
+        get
+        {
+            var events = new List<MidiEvent>(waiting.Count);
+
+            for (var i = 0; i < waiting.Count; i++)
+            {
+                if (waiting[i].HasEvent)
+                {
+                    events.Add(waiting[i].Event);
+                }
+            }
+
+            return MusicEngine.TempoAtTheFirstNote(events);
+        }
+    }
+
+    /// <summary>
+    /// How many ticks of settled music a generation that has not been placed yet holds from a tick
+    /// on - which, at a tempo other than its own, is what it brings to a seam.
+    /// </summary>
+    /// <param name="fromTick">The tick counted from.</param>
+    /// <returns>The ticks, never negative.</returns>
+    public long WaitingSettledTicksFrom(long fromTick) =>
+        waitingSettledTick < fromTick ? 0L : (waitingSettledTick - fromTick) + 1L;
+
+    /// <summary>
+    /// How many ticks of WHOLE, SETTLED, SILENT BARS a generation that has not been placed yet
+    /// opens with: the bars before its first note, counted in whole bars, and only as far as it
+    /// has settled - a bar the generator could still put a note in is never counted.
+    /// </summary>
+    /// <param name="ticksPerBar">How long one of its bars is.</param>
+    /// <returns>A whole number of bars, in ticks; zero when it starts with music.</returns>
+    public long LeadingEmptyTicks(long ticksPerBar)
+    {
+        if (ticksPerBar < 1L || waitingSettledTick < 0L)
+        {
+            return 0L;
+        }
+
+        var firstNote = long.MaxValue;
+
+        for (var i = 0; i < waiting.Count; i++)
+        {
+            var item = waiting[i];
+
+            if (item.HasEvent && MidiEvent.IsNoteOn(item.Event) && item.Event.AbsoluteTime < firstNote)
+            {
+                firstNote = item.Event.AbsoluteTime;
+            }
+        }
+
+        var silentThrough = firstNote < waitingSettledTick + 1L ? firstNote : waitingSettledTick + 1L;
+
+        return (silentThrough / ticksPerBar) * ticksPerBar;
+    }
+
+    /// <summary>
+    /// How much settled music a generation that has not been placed yet holds FROM a tick on -
+    /// which is what it would bring to a seam if everything before that tick were skipped.
+    /// </summary>
+    /// <param name="fromTick">The tick counted from.</param>
+    /// <returns>The time, never negative.</returns>
+    public TimeSpan WaitingSettledTimeFrom(long fromTick)
+    {
+        if (waitingSettledTick < 0L)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var time = waitingTempo.TimeOfTick(waitingSettledTick) - waitingTempo.TimeOfTick(fromTick);
+
+        return time < TimeSpan.Zero ? TimeSpan.Zero : time;
+    }
+
+    /// <summary>
+    /// Skips the first ticks of a generation that has not been placed yet - which the engine only
+    /// ever does for whole, settled, silent bars. Every note after them moves earlier by exactly
+    /// that much; everything IN them that is not a note (the tempo, the metre, the key, programs
+    /// and controllers) is kept and moved to the generation's first tick, so the state the music
+    /// starts in is exactly the state it would have had.
+    /// </summary>
+    /// <param name="ticks">How many ticks to skip.</param>
+    public void SkipLeadingTicks(long ticks)
+    {
+        if (ticks <= 0L)
+        {
+            return;
+        }
+
+        var shifted = new List<GeneratedMusicEvent>(waiting.Count);
+        var tempo = new SettledTempoMap(ticksPerQuarterNote);
+
+        for (var i = 0; i < waiting.Count; i++)
+        {
+            var item = waiting[i];
+            var settledThrough = item.HasSettled ? item.SettledThroughTick - ticks : GeneratedMusicEvent.NothingSettled;
+
+            if (!item.HasEvent)
+            {
+                if (settledThrough >= 0L)
+                {
+                    shifted.Add(GeneratedMusicEvent.SettledThrough(settledThrough));
+                }
+
+                continue;
+            }
+
+            var tick = item.Event.AbsoluteTime;
+            var moved = MusicEventPlacement.At(item.Event, tick < ticks ? 0L : tick - ticks);
+
+            if (moved is TempoEvent tempoEvent)
+            {
+                tempo.Add(tempoEvent.AbsoluteTime, tempoEvent.MicrosecondsPerQuarterNote);
+            }
+
+            shifted.Add(GeneratedMusicEvent.FromMidiEvent(moved,
+                settledThrough < 0L ? GeneratedMusicEvent.NothingSettled : settledThrough));
+        }
+
+        waiting.Clear();
+        waiting.AddRange(shifted);
+        waitingTempo = tempo;
+        waitingSettledTick = waitingSettledTick - ticks < 0L ? -1L : waitingSettledTick - ticks;
     }
 
     /// <summary>

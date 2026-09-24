@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeBrix.Audio.Midi;
 using CodeBrix.Audio.MusicGeneration.Generation;
 using CodeBrix.Audio.MusicGeneration.Models;
-using CodeBrix.Audio.Midi;
+using CodeBrix.Audio.MusicGeneration.Rendering;
 using SilverAssertions;
+using SilverAssertions.Collections;
 using SilverAssertions.Numeric;
 using SilverAssertions.Primitives;
 using Xunit;
@@ -65,6 +67,143 @@ public sealed class MuseCocoLiveTests
         finally
         {
             output.WriteLine($"Direct runner: streaming={streaming}, seconds={timer.Elapsed.TotalSeconds}, tokens={tokens}, events={events}, notes={notes}, lastTick={lastTick}");
+        }
+    }
+
+    [Fact]
+    public async Task staged_MuseCoco_rendered_with_a_session_tempo_plays_every_carried_piece_at_that_tempo()
+    {
+        //Arrange - fresh pieces on the real model, crossfaded, carried outside the band
+        var directory = Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_MUSICGEN_MUSECOCO_BUNDLE");
+        Assert.SkipUnless(!string.IsNullOrWhiteSpace(directory), "Set CODEBRIX_AUDIO_MUSICGEN_MUSECOCO_BUNDLE to a staged music bundle.");
+        MusicGeneratorRegistry.ResetForTesting();
+        TestInstrumentLibraries.GeneralMidi();
+        using var generator = new MuseCocoMusicGenerator("MuseCocoTempoLive", directory,
+            new MuseCocoGeneratorOptions
+            {
+                MaximumTokensPerPass = 512, MinimumTokensPerPass = 0,
+                InferenceThreadCount = Math.Max(1, Math.Min(16, Environment.ProcessorCount / 2))
+            });
+        MusicGeneratorRegistry.Register(generator);
+        var request = new MusicRequest
+        {
+            Seed = 20260923, Controls = new MusicGenerationControls { TopK = 15, TopP = 1, Temperature = 1 }
+        };
+        request.ModelAttributes["instrument.piano"] = "present";
+        using var folder = new RenderOutputFolder("musecoco-session-tempo");
+        using var session = new MusicSession(new MusicGenerationOptions
+        {
+            Generator = generator.Name, InstrumentLibrary = TestInstrumentLibraries.GeneralMidiName,
+            Request = request, SegmentPriming = SegmentPriming.Fresh,
+            SeamCrossfade = TimeSpan.FromSeconds(4.0), TempoPolicy = SessionTempoPolicy.CarryOutsideBand,
+            SampleRate = 22050
+        });
+
+        //Act
+        var result = await session.RenderToFileAsync(folder.File("tempo.wav"), new MusicRenderOptions
+        {
+            TargetLength = TimeSpan.FromSeconds(60.0), Ending = RenderEnding.HardCut
+        }, TestContext.Current.CancellationToken);
+
+        //Assert - from every carried piece's start to the next seam, the only tempo is the session's
+        var tempos = result.Music.SelectMany(track => track).OfType<TempoEvent>().ToArray();
+        var decisions = result.Diagnostics.Where(line => line.StartsWith("Piece at tick", StringComparison.Ordinal)).ToArray();
+        foreach (var line in decisions) output.WriteLine(line);
+        foreach (var tempo in tempos) output.WriteLine($"tempo at {tempo.AbsoluteTime}: {60000000.0 / tempo.MicrosecondsPerQuarterNote:0.0} bpm");
+
+        decisions.Should().NotBeEmpty();
+        var seams = result.SeamTicks.ToList();
+
+        foreach (var line in decisions.Where(line => line.Contains("carried to the session tempo")))
+        {
+            var tick = long.Parse(line.Split(' ')[3].TrimEnd(':'), System.Globalization.CultureInfo.InvariantCulture);
+            var sessionTempo = double.Parse(line.Substring(line.LastIndexOf("of ", StringComparison.Ordinal) + 3).Split(' ')[0],
+                System.Globalization.CultureInfo.InvariantCulture);
+            var next = seams.Where(seam => seam > tick).DefaultIfEmpty(long.MaxValue).Min();
+
+            tempos.Where(tempo => tempo.AbsoluteTime >= tick && tempo.AbsoluteTime < next)
+                .Should().AllSatisfy(tempo =>
+                    (60000000.0 / tempo.MicrosecondsPerQuarterNote).Should().BeApproximately(sessionTempo, 0.1));
+        }
+    }
+
+    [Fact]
+    public async Task staged_MuseCoco_six_minute_render_with_a_session_tempo_always_finishes()
+    {
+        //Arrange - THE ACCEPTANCE CASE of the render that hung: long passes with a minimum, fresh
+        //pieces crossfaded and carried outside the band, six minutes to the file
+        var directory = Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_MUSICGEN_MUSECOCO_BUNDLE");
+        Assert.SkipUnless(!string.IsNullOrWhiteSpace(directory) &&
+                          Environment.GetEnvironmentVariable("CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS") == "1",
+            "Set CODEBRIX_AUDIO_MUSICGEN_MUSECOCO_BUNDLE and CODEBRIX_AUDIO_RUN_LONG_RENDER_TESTS=1 for the long MuseCoco render.");
+        MusicGeneratorRegistry.ResetForTesting();
+        TestInstrumentLibraries.GeneralMidi();
+        using var generator = new MuseCocoMusicGenerator("MuseCocoLongLive", directory,
+            new MuseCocoGeneratorOptions
+            {
+                ExperimentalContinuation = false, MaximumTokensPerPass = 4096, MinimumTokensPerPass = 3072,
+                InferenceThreadCount = Math.Max(1, Math.Min(16, Environment.ProcessorCount))
+            });
+        MusicGeneratorRegistry.Register(generator);
+        var request = new MusicRequest
+        {
+            Seed = 20260923, Controls = new MusicGenerationControls { TopK = 15, TopP = 1, Temperature = 1 }
+        };
+        request.ModelAttributes["instrument.synthesizer"] = "present";
+        request.ModelAttributes["instrument.drum"] = "present";
+        request.ModelAttributes["genre.electronic"] = "present";
+        request.ModelAttributes["danceable"] = "yes";
+        request.ModelAttributes["tempo"] = "fast";
+        using var folder = new RenderOutputFolder("musecoco-long-session-tempo");
+        using var session = new MusicSession(new MusicGenerationOptions
+        {
+            Generator = generator.Name, InstrumentLibrary = TestInstrumentLibraries.GeneralMidiName,
+            Request = request, SegmentPriming = SegmentPriming.Fresh,
+            SeamCrossfade = TimeSpan.FromSeconds(4.0), TempoPolicy = SessionTempoPolicy.CarryOutsideBand
+        });
+        CodeBrix.Audio.MusicGeneration.Streaming.MusicEngine engine = null;
+        CodeBrix.Audio.MusicGeneration.Rendering.OfflineRender.EngineCreatedForTesting = created => engine = created;
+        var timer = Stopwatch.StartNew();
+
+        try
+        {
+            //Act - with a watchdog: the state every half minute, and a failure if nothing moves for
+            //five minutes
+            var render = session.RenderToFileAsync(folder.File("long.wav"), new MusicRenderOptions
+            {
+                TargetLength = TimeSpan.FromSeconds(360.0), Ending = RenderEnding.HardCut
+            }, TestContext.Current.CancellationToken);
+            var lastState = string.Empty;
+            var unchangedSince = timer.Elapsed;
+
+            while (!render.IsCompleted)
+            {
+                await Task.WhenAny(render, Task.Delay(TimeSpan.FromSeconds(30.0), TestContext.Current.CancellationToken));
+
+                var state = engine == null ? "no engine yet" : engine.DescribeState();
+                output.WriteLine($"{timer.Elapsed.TotalSeconds:0}s {state}");
+
+                if (state != lastState)
+                {
+                    lastState = state;
+                    unchangedSince = timer.Elapsed;
+                }
+
+                (timer.Elapsed - unchangedSince).Should().BeLessThan(TimeSpan.FromMinutes(5.0),
+                    "a render must never stop making progress: " + state);
+            }
+
+            var result = await render;
+
+            //Assert
+            foreach (var line in result.Diagnostics) output.WriteLine(line);
+            output.WriteLine($"Rendered {result.Duration} in {timer.Elapsed.TotalMinutes:0.0} min; seams {string.Join(", ", result.SeamTicks)}");
+            result.Duration.Should().Be(TimeSpan.FromSeconds(360.0));
+            result.ReachedTargetLength.Should().BeTrue();
+        }
+        finally
+        {
+            CodeBrix.Audio.MusicGeneration.Rendering.OfflineRender.EngineCreatedForTesting = null;
         }
     }
 

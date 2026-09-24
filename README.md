@@ -32,6 +32,7 @@ To hear anything, an application registers an instrument library. This library r
 * Replaying an application's own music - a MIDI file, a MIDI stream, a MIDI event collection, or a tune written in ABC notation - under a name of its own
 * Renditions: how the parts are voiced, as data - an instrument and a level for each part, an optional layer under it, and a set of voicings that were listened to and rated
 * Music that keeps going: the generator is asked to carry on at a bar line, and a follow-up prompt takes over at a bar line while the music plays
+* Seams chosen by the application: each new segment primed with the music so far, started fresh as a new piece, or the two taking turns - and a crossfade at a fresh seam, so the new piece takes over from the old one instead of cutting in
 * A streaming lifecycle built for applications that come first - a pre-roll, a generate-ahead window, diagnostics a game loop can read every frame, and rests rather than garbled timing on a machine that cannot keep up
 * Rendering the same music offline to an audio file or a stream, in whatever format a writer is registered for, optionally to an exact length with a fade, a hard cut or the generator's own ending
 * One request type for every generator: free text, notation the generator reads itself, a MIDI primer, musical intent, instrument hints, a drum kit, a seed, generation controls and a continuation of the music so far
@@ -95,6 +96,26 @@ using var music = new MusicSession(new MusicGenerationOptions
     Rendition = "AmbientDuet",                  //how the parts are voiced
 });
 ```
+
+### Seams: priming and crossfade
+
+A segment that is primed with the last bars carries on in the same key and idiom, and some models then write the same material again at every seam, whatever the seed. A fresh segment is a new piece in the same character. Taking turns keeps some continuity while the music still moves on, and a crossfade lets the outgoing piece fade out over the incoming one instead of stopping at a bar line.
+
+```csharp
+using var music = new MusicSession(new MusicGenerationOptions
+{
+    Generator = "MyModel",                      //a model generator the application registered
+    SegmentPriming = SegmentPriming.Alternate,  //primed, fresh, primed, fresh...
+    SeamCrossfade = TimeSpan.FromSeconds(4.0),  //fresh seams only; zero is a hard join
+});
+music.Play();
+
+Console.WriteLine(music.Diagnostics);           //what is generating, and the crossfades so far
+```
+
+If the new piece opens with silent bars, a crossfade skips them, so the old piece fades into music rather than into silence; a hard join plays them as written. A model picks a new tempo for every fresh piece, so the pulse can lurch at each seam. `TempoPolicy = SessionTempoPolicy.CarryOutsideBand` keeps a session tempo - the first piece's, or `SessionBeatsPerMinute` - and plays a fresh piece more than `TempoBand` (15%) away from it at the session tempo instead; `Carry` does that for every fresh piece. A carried piece keeps its notes where they are and is simply heard a little faster or slower.
+
+A crossfade never costs the music a gap: when the new piece has not generated enough by the time the old one has to be committed, the fade is shortened, and the diagnostics count it. A file rendered with the same options crossfades the same way.
 
 ## Documentation
 

@@ -176,6 +176,28 @@ internal sealed class CarriedMusicState
         }
     }
 
+    /// <summary>
+    /// The program every channel is playing, as program changes at one tick - which is how a
+    /// crossfaded seam hands the incoming piece's brand-new instruments the programs a hard join
+    /// would simply have kept.
+    /// </summary>
+    /// <param name="tick">The tick to put them at.</param>
+    /// <returns>One program change per channel whose program is known, lowest channel first.</returns>
+    public IReadOnlyList<MidiEvent> ProgramChangesAt(long tick)
+    {
+        var changes = new List<MidiEvent>();
+
+        for (var channel = 1; channel <= Channels; channel++)
+        {
+            if (programs[channel] >= 0 && programs[channel] < 128)
+            {
+                changes.Add(new PatchChangeEvent(tick, channel, programs[channel]));
+            }
+        }
+
+        return changes;
+    }
+
     /// <summary>Builds the carried half of a continuation - everything except the tail itself.</summary>
     /// <returns>The continuation, with no tail set.</returns>
     public MusicContinuation ToContinuation()

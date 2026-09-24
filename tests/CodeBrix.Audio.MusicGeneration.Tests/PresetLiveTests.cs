@@ -32,7 +32,8 @@ namespace CodeBrix.Audio.MusicGeneration.Tests;
 /// </para>
 /// </remarks>
 [Collection("MusicGeneratorRegistry")]
-public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<SkyTNTLoadedModel>
+public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<SkyTNTLoadedModel>,
+    IAsyncLifetime
 {
     private const int SampleRate = 44100;
 
@@ -52,6 +53,34 @@ public class PresetLiveTests : IClassFixture<MuPTLoadedModel>, IClassFixture<Sky
         this.mupt = mupt;
         this.skytnt = skytnt;
     }
+
+    /// <summary>
+    /// Waits for both shared generators to be free before each test. A test that renders through a
+    /// session ends by disposing it, which CANCELS the generation it was pulling - but that pass
+    /// lets go of the model on its own task a moment later, and a generator refuses a second
+    /// generation by name while the first still holds it.
+    /// </summary>
+    /// <returns>A task that completes when both generators are free.</returns>
+    public async ValueTask InitializeAsync()
+    {
+        var clock = Stopwatch.StartNew();
+
+        while (mupt.Generator.IsGenerating || skytnt.Generator.IsGenerating)
+        {
+            if (clock.Elapsed > HowLongToWaitForMusic)
+            {
+                throw new InvalidOperationException(
+                    "A shared generator was still writing a piece from an earlier test after " +
+                    HowLongToWaitForMusic + ".");
+            }
+
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+    }
+
+    /// <summary>Nothing to give back: the class fixtures own the generators.</summary>
+    /// <returns>A completed task.</returns>
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Theory]
     [InlineData("ReelInGMinor")]
