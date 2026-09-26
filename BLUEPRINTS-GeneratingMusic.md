@@ -27,6 +27,7 @@ in the global namespace to stay short; give them your own.
 The continuous-music sections use these packages, by identifier:
 
 - `CodeBrix.Audio.MusicGeneration.MitLicenseForever` - the sessions, the engine and the renderer
+- `CodeBrix.Audio.MitLicenseForever` - the desktop audio device backend, needed to play (not to render)
 - `CodeBrix.Audio.MusicGeneration.SkyTNT.ApacheLicenseForever` - the SkyTNT model and its registration
 - `CodeBrix.Audio.MusicGeneration.MuPT.ApacheLicenseForever` - the MuPT model and its registration
 - `CodeBrix.Audio.Samples.FluidR3Gm.MitLicenseForever` - optional: recorded General MIDI instruments

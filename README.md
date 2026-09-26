@@ -19,7 +19,7 @@ Note that the NuGet package ID and the namespace are different - there is no pac
 
 XML documentation (IntelliSense) ships alongside the assembly.
 
-CodeBrix.Audio.MusicGeneration depends on `CodeBrix.Audio`, `CodeBrix.Audio.ModestSynth` and `CodeBrix.Ollama.ModelRunner`. No ModelManager or Python is required at application runtime. MuPT uses ModelRunner's bundled native engine; SkyTNT and MuseCoco use its managed ONNX runtime. Retain the runtime assets for your deployment platform.
+CodeBrix.Audio.MusicGeneration depends on `CodeBrix.Audio.Core`, `CodeBrix.Audio.ModestSynth` and `CodeBrix.Ollama.ModelRunner`. Core alone is enough to generate music and render it to a file. To play it, the application also references `CodeBrix.Audio.MitLicenseForever`, the desktop package that supplies the audio device backend for Windows, Linux and macOS. No ModelManager or Python is required at application runtime. MuPT uses ModelRunner's bundled native engine; SkyTNT and MuseCoco use its managed ONNX runtime. Retain the runtime assets for your deployment platform.
 
 To hear anything, an application registers an instrument library. This library registers none - that decision is always the application's - and the General MIDI library is one line: `GeneralMidiInstrumentLibrary.Register();`
 

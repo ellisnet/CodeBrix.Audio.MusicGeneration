@@ -17,9 +17,18 @@ DEPENDENCIES - READ THIS BEFORE YOU TOUCH THE CSPROJ
 THE SHIPPING LIBRARY DEPENDS ON EXACTLY THREE PACKAGES, AND IT NEVER GROWS A
 FOURTH:
 
-    CodeBrix.Audio.MitLicenseForever
+    CodeBrix.Audio.Core.MitLicenseForever
     CodeBrix.Audio.ModestSynth.MitLicenseForever
     CodeBrix.Ollama.ModelRunner.MitLicenseForever
+
+CORE, NOT THE DESKTOP PACKAGE. CodeBrix.Audio.Core owns the CodeBrix.Audio and
+CodeBrix.Audio.Engine assemblies - every type this library compiles against -
+and the desktop package, CodeBrix.Audio.MitLicenseForever, adds only the native
+device backend on top of it. Generation and offline rendering run on Core
+alone; live playback needs a backend, and WHICH backend is the application's
+decision, so this library does not make it. ModestSynth and Opus follow the same
+rule. This library is not expected to run on Android and names no Android
+package. The csproj carries a comment saying so, beside the reference.
 
 It MUST NOT depend on CodeBrix.Ollama.ModelManager. It MUST NOT depend on
 CodeBrix.Python. It MUST NOT have any code path that requires Python to be
@@ -29,7 +38,8 @@ consumer who wants it references that package and calls its Register() itself.
 
 THE ModestSynth REFERENCE IS DELIBERATE, although no code in this library ever
 names a ModestSynth type. DO NOT REMOVE IT AS UNUSED. One package reference has
-to bring a consumer everything they need to make a sound, and ModestSynth is
+to bring a consumer everything they need to make a sound - the instruments, that
+is; the audio device is the platform package's, above - and ModestSynth is
 where the General MIDI instrument library lives. The csproj carries a comment
 saying so, beside the reference.
 
@@ -43,9 +53,10 @@ does not reference, so that a developer handed an unusable state is told what to
 do about it.
 
 AND THE OTHER DIRECTION: NO CodeBrix.Audio.* PACKAGE DEPENDS ON THIS ONE unless
-".MusicGeneration" is in its own name. CodeBrix.Audio, CodeBrix.Audio.Opus and
-CodeBrix.Audio.Samples.FluidR3Gm depend on CodeBrix.Audio alone and must stay
-that way. The dependency runs one way: this library consumes them.
+".MusicGeneration" is in its own name. CodeBrix.Audio, CodeBrix.Audio.ModestSynth,
+CodeBrix.Audio.Opus and CodeBrix.Audio.Samples.FluidR3Gm depend on
+CodeBrix.Audio.Core alone and must stay that way. The dependency runs one way:
+this library consumes them.
 
 ********************************************************************************
 
@@ -213,7 +224,7 @@ run in the ordinary suite through MuPTModel.ModelPath, SkyTNTModel.ModelDirector
 and SkyTNTModel.ResolveFiles(). No staging-path variables or availability skips
 remain; missing copied artifacts fail the integration tests. Passes stay short
 and fixtures reuse a loaded generator per class. Only the test project references
-the model packages; shipping dependencies remain Audio, ModestSynth and ModelRunner.
+the model packages; shipping dependencies remain Core, ModestSynth and ModelRunner.
 
 THE GATED TESTS - all opt-in through an environment variable, all run
 deliberately and by themselves:
@@ -259,9 +270,10 @@ NOTE ON THE RUNNER: this xUnit v3 build takes `-class` and `-method`, not
 `--filter-class`.
 
 The test project references CodeBrix.Audio.ModestSynth directly, and
-CodeBrix.Audio.Opus as well. That is allowed: a test project is a CONSUMER, and
-registering an instrument library - or an audio format - is always a consumer's
-job. Proving that ".opus" is reached through CodeBrix.Audio's writer registry
+CodeBrix.Audio.Opus as well, and the desktop package CodeBrix.Audio.MitLicenseForever
+because the audible tests open a device. That is allowed: a test project is a
+CONSUMER, and registering an instrument library - or an audio format, or
+selecting a device backend - is always a consumer's job. Proving that ".opus" is reached through CodeBrix.Audio's writer registry
 REQUIRES being an application that references the package carrying the encoder.
 It does not license a fourth dependency on the shipping library, and the csproj
 says so beside both references.
@@ -584,7 +596,7 @@ context within one enumeration and preserves the runner's absolute section ticks
 
 The current integration references the published ModelRunner package from
 nuget.org. Temporary Ollama packages are no longer required. The shipping dependency
-set remains Audio, ModestSynth and ModelRunner; ModelManager belongs only in the
+set remains Core, ModestSynth and ModelRunner; ModelManager belongs only in the
 model repositories' nonshipping staging tools. Jeremy owns publication; agents
 leave changes uncommitted.
 

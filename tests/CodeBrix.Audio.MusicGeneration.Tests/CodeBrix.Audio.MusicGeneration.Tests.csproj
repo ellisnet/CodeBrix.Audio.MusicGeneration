@@ -12,9 +12,15 @@
     The test project MAY reference CodeBrix.Audio.ModestSynth directly - it is a consumer, and a
     consumer is the one who registers an instrument library. The SHIPPED library may not grow a
     fourth dependency; this project is not the shipped library.
+
+    It is also a DESKTOP consumer, so it selects its device backend explicitly: the shipped library
+    depends on CodeBrix.Audio.Core alone, and the audible tests need the desktop package's native
+    payload. Keep this reference at least as new as Core, so that the desktop package resolves to
+    the asset-only build that goes with it.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.267.279" />
+    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.269.1270" />
+    <PackageReference Include="CodeBrix.Audio.MitLicenseForever" Version="1.0.269.1270" />
   </ItemGroup>
 
   <!--

@@ -83,13 +83,24 @@ INSTALLATION
 
 Dependencies, by id and nothing else:
 
-    CodeBrix.Audio                  MIDI, ABC, synthesis, playback and rendering
+    CodeBrix.Audio.Core             MIDI, ABC, synthesis, the sequencer and rendering
     CodeBrix.Audio.ModestSynth      the General MIDI instrument library
     CodeBrix.Ollama.ModelRunner     the engine a model-backed generator runs on
 
 THE ModestSynth DEPENDENCY IS DELIBERATE even though this library's own code
 never uses it: one package reference has to bring you everything needed to make
 a sound, and ModestSynth is where the instruments are.
+
+TO PLAY THROUGH A SPEAKER, ADD THE DESKTOP PACKAGE. Core is the managed audio
+library and carries no device backend. Generating music, and rendering it to a
+file, run on Core alone. A session that opens the audio device - Play() with
+ApplicationOwnsAudioOutput left false - needs the native backend, and that is
+the APPLICATION's reference to add, on Windows, Linux and macOS:
+
+    <PackageReference Include="CodeBrix.Audio.MitLicenseForever" />
+
+It depends on the same Core, adds no API and changes no code. This library does
+not expect to run on Android and names no Android package.
 
 TO HEAR ANYTHING, REGISTER AN INSTRUMENT LIBRARY. The line to write, unless you
 want a different library, is:
@@ -2261,6 +2272,8 @@ MINIMUM VIABLE PROJECT TEMPLATE
       </PropertyGroup>
       <ItemGroup>
         <PackageReference Include="CodeBrix.Audio.MusicGeneration.MitLicenseForever" Version="*" />
+        <!-- the desktop audio device backend - needed to HEAR it, not to generate or render -->
+        <PackageReference Include="CodeBrix.Audio.MitLicenseForever" Version="*" />
       </ItemGroup>
     </Project>
 
@@ -2321,6 +2334,10 @@ COMMON PITFALLS TO AVOID
   * EXPECTING NO SOUND TO BE A BUG. This library registers no instrument
     library. Call GeneralMidiInstrumentLibrary.Register(), or register another
     one, before you expect anything audible.
+  * PLAYING WITH ONLY CORE ON THE MACHINE. This library depends on
+    CodeBrix.Audio.Core, which has no audio device backend. Rendering to a file
+    works without one; opening the audio device does not. Reference
+    CodeBrix.Audio.MitLicenseForever from the application for desktop playback.
   * EXPECTING A REGISTERED GENERATOR TO PLAY. Registering is not specifying.
     Resolve(null) is ALWAYS the embedded replay, however many you registered.
     Ask for your generator by name - MusicGenerationOptions.Generator.

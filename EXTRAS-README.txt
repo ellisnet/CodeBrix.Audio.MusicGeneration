@@ -25,8 +25,9 @@ It is also the library's first CONSUMER, and it is written that way on purpose:
 it registers an instrument library from CodeBrix.Audio.ModestSynth and the Opus
 encoder from CodeBrix.Audio.Opus, exactly as an application would. The test project
 also references both model packages and runs short integration tests from their
-copied assets, without staging-path variables. Opus and the model packages are test
-references; the shipped library retains only Audio, ModestSynth and ModelRunner.
+copied assets, without staging-path variables. Opus, the model packages and the
+desktop audio package (the device backend the audible tests open) are test
+references; the shipped library retains only Core, ModestSynth and ModelRunner.
 
 A few of its tests are opt-in behind an environment variable, because they make
 sound, hold the audio device, need a caller-staged model, take minutes or write
