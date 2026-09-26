@@ -31,7 +31,7 @@
     dependency question.
   -->
   <ItemGroup>
-    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.264.1216" />
+    <PackageReference Include="CodeBrix.Audio.Opus.BsdLicenseForever" Version="1.0.269.1352" />
   </ItemGroup>
 
   <!-- Short model integration tests run from the published packages' copied assets. -->
