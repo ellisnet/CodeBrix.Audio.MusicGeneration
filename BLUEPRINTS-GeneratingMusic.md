@@ -150,8 +150,8 @@ of instrument library is the biggest single decision about how the music sounds:
   dependencies, synthesizes every General MIDI program and the drum kit, and adds
   nothing to what you ship. It is strongest on pads, bells and electric pianos.
 - `FluidR3Gm` is recorded instruments. In listening it sounded much better than
-  the synthesized set on the same music, at the cost of a package of well over a
-  hundred megabytes. Choose it where that download is acceptable.
+  the synthesized set on the same music, at the cost of a much larger package.
+  Choose it where that download is acceptable.
 
 **Pitfalls.**
 - The first library registered is the default for a session that names none. Name
@@ -262,7 +262,7 @@ to write. At the presets' density a SkyTNT pass is roughly a minute of music; a
 MuPT tune runs from under half a minute to about a minute. When a pass ends, the
 engine asks the same model again, with a new seed derived from the one you gave,
 and the new segment
-starts on the next bar line with the tempo, metre, key and each part's instrument
+starts on the next bar line with the tempo, meter, key and each part's instrument
 carried across. How that next request is built is the subject of the next recipe.
 
 Generation runs in bursts. The engine pulls from the model until `GenerateAhead`
@@ -417,7 +417,7 @@ The incoming piece is voiced by instruments of its own, built from the same libr
 and rendition, so with the automatic rendition a part can come in on a different
 voice than it had before. A fresh piece that opens with bars containing no notes at
 all has those bars skipped at a crossfade, so the old piece fades into music rather
-than into silence; the tempo, metre and instruments stated in those bars still apply.
+than into silence; the tempo, meter and instruments stated in those bars still apply.
 
 The fade never costs the music a gap. The incoming piece is placed early only once it
 has generated the whole fade plus its own pre-roll. When it has not by the time the
@@ -504,7 +504,7 @@ one, so with them the pulse does not lurch in the first place. With these two mo
 the policy is mostly the way to choose the pulse yourself: `SessionBeatsPerMinute` is
 never sent to the model, so it works with any generator, including one that refuses a
 tempo in its request, while the request's own intended tempo is a request TO the model
-and a model that does not honour a tempo refuses it by name. `CarryOutsideBand` earns
+and a model that does not honor a tempo refuses it by name. `CarryOutsideBand` earns
 its place with a generator that picks a new tempo for every piece, such as one of your
 own, and it is what the render in the last section of this file relies on.
 
@@ -553,7 +553,7 @@ public static class MusicStyles
             Request = preset.CreateRequest(),       // a new request every time, yours to change
         };
 
-    // SkyTNT reads instruments, a drum kit, a tempo, a metre, a key and a mode.
+    // SkyTNT reads instruments, a drum kit, a tempo, a meter, a key and a mode.
     public static MusicRequest SkyTNTRequest()
     {
         var request = new MusicRequest
@@ -574,7 +574,7 @@ public static class MusicStyles
         return request;
     }
 
-    // MuPT reads a key, a mode, a metre, a tempo and up to two voices. It writes no
+    // MuPT reads a key, a mode, a meter, a tempo and up to two voices. It writes no
     // drums, and what plays each part is the rendition's business.
     public static MusicRequest MuPTRequest() => new MusicRequest
     {
@@ -583,7 +583,7 @@ public static class MusicStyles
             Key = "G",
             Mode = MusicMode.Major,
             Meter = new MusicMeter(6, 8),
-            BeatsPerMinute = 110.0,                 // in the beat the metre is felt in
+            BeatsPerMinute = 110.0,                 // in quarter notes; MuPT converts to the meter's beat
             VoiceCount = 2,
         },
         Seed = 1234,
@@ -620,8 +620,9 @@ instrument hints and free text. Character words such as "calm" or "driving", add
 **Pitfalls.**
 - A seed makes a request repeatable, but it is not a way to vary SkyTNT's primed
   segments; see "Choose how each new segment starts".
-- `CreateRequest()` hands back a new request every call. Change your copy freely, and
-  clone a request you are still editing before handing it to a session.
+- `CreateRequest()` hands back a new request every call. Change your copy freely: a
+  session takes its own copy of the options and the request when it is created, so later
+  edits do not reach it.
 - A voice count is a number of parts, not a number of sounds. A rendition written for
   two parts is what makes a two-part piece sound like a duet.
 
@@ -982,7 +983,7 @@ public static class MuseCocoStaging
 **Why.** Exporting needs Python, torch, numpy and onnx, and only here; everything after
 it runs in managed .NET. `PythonSupport.Check` says what is missing before any work
 starts. The music model needs its route named, `ExportRoute.MuseCocoMusic`; the text
-model is recognised from its architecture but is named here too, so the program reads
+model is recognized from its architecture but is named here too, so the program reads
 the same way for both.
 
 The reductions are weight-only: the weights shrink and the arithmetic stays at full
@@ -1105,8 +1106,9 @@ conservative share meant for a machine that is busy with other things.
 
 **Pitfalls.**
 - The adapter acts on attributes, a sentence (with the text bundle), a seed, the
-  sampling settings, a token cap and a thread count. It refuses musical intent, instrument
-  hints, a primer and a continuation of the music so far, by name.
+  sampling settings (but not a repetition penalty), a token cap and a thread count. It
+  refuses musical intent, instrument hints, a primer and a continuation of the music so
+  far, by name.
 - Ask for fewer instruments rather than more. A sampled piece that needs more than
   fifteen melodic instruments is refused part-way; the engine goes on with a fresh piece
   and counts it, but the refused piece is shorter than it would have been.
@@ -1228,8 +1230,8 @@ and was followed by a fresh piece; and any fade that could not be given in full.
 - The MIDI keeps the outgoing piece's last seconds on a track of its own at every seam,
   on the same channels as the incoming piece and without the fade's gain, because MIDI
   has no crossfade. The audio file is the render as it was mixed.
-- A cancelled render leaves no file that looks finished. A render that stops early has
-  stopped for a reason its exception gives.
+- A canceled or failed render leaves no file: the file it created is deleted. A render
+  that stops early has stopped for a reason its exception gives.
 
 **Verify.** `ReachedTargetLength` is true, `Duration` is the length you asked for, and
 the `.mid` beside the audio file opens in any MIDI program.
@@ -1242,7 +1244,9 @@ same voicing rules, and a session the rest of the application already knows how 
 start and stop.
 
 **The shape.** A replay generator over the rendered `.mid`, registered under a name of
-its own, and a session that plays it once and finishes.
+its own, and a session that plays it once and finishes. Playing opens the audio device,
+so the application also references the desktop audio device backend package listed at
+the top of this file.
 
 **Code.**
 
