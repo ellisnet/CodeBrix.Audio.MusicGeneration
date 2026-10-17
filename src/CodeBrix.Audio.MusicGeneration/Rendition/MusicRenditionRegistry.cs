@@ -145,10 +145,14 @@ public static class MusicRenditionRegistry
     }
 
     /// <summary>
-    /// Empties the registry back to the six built-in renditions, each freshly built. For tests,
-    /// which share this process-wide state; nothing in a shipping application should call it.
+    /// FOR A CONSUMER'S TEST SUITE. Empties the registry back to the built-in renditions named on
+    /// <see cref="BuiltInRenditions.Names"/>: every rendition the application registered is
+    /// removed, and every built-in rendition is replaced by a freshly built one. The registry is
+    /// process-wide state that test classes share, and this is how a test starts from a known
+    /// registry. Production code must not call it: it throws away every registration the
+    /// application made.
     /// </summary>
-    internal static void ResetForTesting()
+    public static void ResetForTesting()
     {
         lock (Gate)
         {

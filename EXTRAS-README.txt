@@ -56,7 +56,7 @@ EMBEDDED MUSIC
 ==============
     src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic/
 
-Four small pieces of music that are compiled INTO the package as embedded
-resources, so they are not extras in the usual sense - they ship. They are
-listed here because they are the only non-source content in the repository.
-What they are and where they came from is in THIRD-PARTY-NOTICES.txt.
+Ten MIDI cues and two short ABC tunes that are compiled INTO the package as
+embedded resources, so they are not extras in the usual sense - they ship. They
+are listed here because they are the only non-source content in the repository.
+What they are is in THIRD-PARTY-NOTICES.txt.

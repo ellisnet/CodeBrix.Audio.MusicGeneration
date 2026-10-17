@@ -85,9 +85,10 @@ public class MusicSessionAudioTests
     [Fact]
     public async Task the_whole_embedded_piece_reaches_the_timeline_and_the_timeline_completes()
     {
-        //Arrange
-        var generator = MusicGeneratorRegistry.Resolve(null);
-        var expected = await GeneratedAsync(generator);
+        //Arrange - the default plays a different cue on every pass, so the pass to expect comes
+        //from a second default shuffled from the same seed
+        var generator = EmbeddedReplay.CreateDefault(new Random(20261017));
+        var expected = await GeneratedAsync(EmbeddedReplay.CreateDefault(new Random(20261017)));
 
         var time = new ManualTimeProvider();
         var stream = new MidiStream(Resolution);

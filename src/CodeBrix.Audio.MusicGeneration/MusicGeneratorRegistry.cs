@@ -26,7 +26,7 @@ namespace CodeBrix.Audio.MusicGeneration;
 /// ship an application believing a model is playing when a piece of embedded music is.
 /// </para>
 /// <para>
-/// THE FOUR BUILT-IN REPLAYS ARE ALWAYS HERE. They need no registration, they appear in
+/// THE BUILT-IN REPLAYS ARE ALWAYS HERE. They need no registration, they appear in
 /// <see cref="Registered"/> and <see cref="RegisteredNames"/> ahead of anything a consumer
 /// registers, and nothing else may take one of their names - see <see cref="EmbeddedReplay"/>.
 /// </para>
@@ -101,7 +101,8 @@ public static class MusicGeneratorRegistry
     }
 
     /// <summary>
-    /// Every generator that can be asked for by name: the four built-in replays first, then
+    /// Every generator that can be asked for by name: the built-in replays first (in the order
+    /// <see cref="EmbeddedReplay.Names"/> lists them), then
     /// whatever a consumer registered, in registration order.
     /// </summary>
     public static IReadOnlyList<IMusicGenerator> Registered
@@ -122,7 +123,7 @@ public static class MusicGeneratorRegistry
     }
 
     /// <summary>
-    /// Whether a generator can be asked for under a name, matched case-insensitively. The four
+    /// Whether a generator can be asked for under a name, matched case-insensitively. The
     /// built-in replay names always can.
     /// </summary>
     /// <param name="name">The generator name to look for.</param>
@@ -167,11 +168,15 @@ public static class MusicGeneratorRegistry
     }
 
     /// <summary>
-    /// Empties the registry back to the four built-in replays, each of them freshly built and with
-    /// nothing loaded. For tests, which share this process-wide state; nothing in a shipping
-    /// application should call it.
+    /// FOR A CONSUMER'S TEST SUITE. Empties the registry back to the built-in replays named on
+    /// <see cref="EmbeddedReplay.Names"/>: every generator the application registered is removed,
+    /// and every built-in replay is replaced by a freshly built one with nothing loaded. The
+    /// registry is process-wide state that test classes share, and this is how a test starts from
+    /// a known registry. Production code must not call it: it throws away every registration the
+    /// application made, and any generator it was holding is no longer the one the registry hands
+    /// out.
     /// </summary>
-    internal static void ResetForTesting()
+    public static void ResetForTesting()
     {
         lock (Gate)
         {

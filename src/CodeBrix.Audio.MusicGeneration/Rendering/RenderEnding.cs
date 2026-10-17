@@ -33,7 +33,7 @@ public enum RenderEnding
     /// </summary>
     /// <remarks>
     /// IT IS ONE PASS OF THE GENERATOR. A generator that would carry on for ever - the embedded
-    /// replay loops, and a model continues - is asked once and rendered to the end of what it
+    /// replay plays piece after piece, and a model continues - is asked once and rendered to the end of what it
     /// writes, so a render with this ending always finishes. A target length is not used.
     /// </remarks>
     NaturalStop = 2

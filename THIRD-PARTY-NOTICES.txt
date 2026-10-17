@@ -18,30 +18,23 @@ https://github.com/ellisnet/CodeBrix.Audio.MusicGeneration/issues
 
 THE MUSIC EMBEDDED IN THIS PACKAGE
 
-Four small pieces of music ship inside the assembly, in
-src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic:
+Ten MIDI pieces and two short ABC tunes ship inside the assembly, in
+src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic.
 
-    skytnt-fp32-dense-long-seed20260918-2000ev.mid
-    skytnt-fp32-ordinary.mid
-    mupt-q8_0-duet-Am-waltz-seed29.abc
-    mupt-q8_0-air-Dmix-seed11.abc
+The MIDI pieces embedded in the package (the .mid files) are original works
+owned by the owner of this repository and are covered by this repository's
+license; they are not third-party content.
 
-THESE ARE NOT THIRD-PARTY RECORDINGS OR TRANSCRIPTIONS, and no third-party score
-or performance is included in them. Every one is the OUTPUT of a model that was
-run locally by the owner of this repository. The models are published under the
-Apache License 2.0 - skytnt/midi-model-tv2o-medium for the two MIDI pieces, and
-MuPT-v1-8192-190M for the two ABC tunes - and nothing of the models themselves
-is here: these files are a few kilobytes of notes each.
+The two ABC tunes (mupt-q8_0-duet-Am-waltz-seed29.abc and
+mupt-q8_0-air-Dmix-seed11.abc) are NOT THIRD-PARTY RECORDINGS OR
+TRANSCRIPTIONS, and no third-party score or performance is included in them.
+Each is the OUTPUT of the MuPT-v1-8192-190M model, which is published under the
+Apache License 2.0, run locally by the owner of this repository. Nothing of the
+model itself is here: these files are a few hundred bytes of notes each.
 
 They are listed in this file deliberately, rather than left unmentioned, so that
 the question "where did the music in the package come from?" has an answer in
 the one place the answer is looked for.
-
-The recipe for the default MIDI piece, which was generated for this package:
-CodeBrix.Ollama.ModelRunner, the SkyTNT midi-model-tv2o-medium FP32 bundle,
-eight inference threads, seed 20260918, instruments 0, 40, 73, 24 and 48, drum
-kit 0, 140 beats per minute, prompt events included, 2,000 events. The other
-three came from listening sessions run the same way against the same two models.
 
 ================================================================================
 

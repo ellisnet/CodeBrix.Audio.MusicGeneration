@@ -86,17 +86,25 @@
       the General MIDI instrument library lives. Do not remove it as "unused".
     -->
     <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.269.1270" />
-    <PackageReference Include="CodeBrix.Ollama.ModelRunner.MitLicenseForever" Version="1.0.266.110" />
+    <PackageReference Include="CodeBrix.Ollama.ModelRunner.MitLicenseForever" Version="1.0.290.840" />
   </ItemGroup>
 
   <!--
-    THE EMBEDDED MUSIC. Four small pieces of model-generated music ship inside the assembly so that
-    a consumer with no model, no download and no configuration still gets music. The logical names
+    THE EMBEDDED MUSIC. Ten MIDI cues and two short ABC tunes ship inside the assembly so that a
+    consumer with no model, no download and no configuration still gets music. The logical names
     are spelled out rather than inferred, because the replay generators look them up by name.
   -->
   <ItemGroup>
-    <EmbeddedResource Include="EmbeddedMusic\skytnt-fp32-dense-long-seed20260918-2000ev.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.skytnt-fp32-dense-long-seed20260918-2000ev.mid" />
-    <EmbeddedResource Include="EmbeddedMusic\skytnt-fp32-ordinary.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.skytnt-fp32-ordinary.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\TheRopeReachesTheWindow.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.TheRopeReachesTheWindow.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\AWayThroughTheSmoke.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.AWayThroughTheSmoke.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\TheBoatIsStillWaiting.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.TheBoatIsStillWaiting.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\AcrossTheCollapsingBridge.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.AcrossTheCollapsingBridge.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\RunningTowardTheLight.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.RunningTowardTheLight.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\TheLastDoorOpens.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.TheLastDoorOpens.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\EveryoneOnTheOtherSide.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.EveryoneOnTheOtherSide.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\ASignalFromTheHelicopter.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.ASignalFromTheHelicopter.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\OutOfTheFlood.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.OutOfTheFlood.mid" />
+    <EmbeddedResource Include="EmbeddedMusic\SafeBeyondTheSearchlights.mid" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.SafeBeyondTheSearchlights.mid" />
     <EmbeddedResource Include="EmbeddedMusic\mupt-q8_0-duet-Am-waltz-seed29.abc" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.mupt-q8_0-duet-Am-waltz-seed29.abc" />
     <EmbeddedResource Include="EmbeddedMusic\mupt-q8_0-air-Dmix-seed11.abc" LogicalName="CodeBrix.Audio.MusicGeneration.EmbeddedMusic.mupt-q8_0-air-Dmix-seed11.abc" />
   </ItemGroup>

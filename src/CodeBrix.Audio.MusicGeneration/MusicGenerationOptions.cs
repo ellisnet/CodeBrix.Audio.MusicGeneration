@@ -183,7 +183,7 @@ public sealed class MusicGenerationOptions
     /// <summary>
     /// What happens when the generator reaches the end of what it was writing. The default is
     /// <see cref="EndOfPiecePolicy.KeepGenerating"/>: the music carries on, which for the embedded
-    /// replay means it loops.
+    /// replay means it goes on to the next of its pieces.
     /// </summary>
     public EndOfPiecePolicy EndOfPiece { get; set; } = EndOfPiecePolicy.KeepGenerating;
 

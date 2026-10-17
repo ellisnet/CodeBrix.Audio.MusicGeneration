@@ -42,8 +42,8 @@ public sealed class ActiveMusicSource
 
     /// <summary>
     /// Whether the music is a piece being REPLAYED rather than one being composed - which is true
-    /// of the four pieces embedded in this library and of any replay a consumer built over music
-    /// of their own. It is the question "am I actually hearing a model" in one property.
+    /// of every piece embedded in this library and of any replay a consumer built over music of
+    /// their own. It is the question "am I actually hearing a model" in one property.
     /// </summary>
     public bool IsReplay => GeneratorFamily == ReplayMusicGenerator.ReplayFamily;
 

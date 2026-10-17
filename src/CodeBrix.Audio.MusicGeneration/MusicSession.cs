@@ -28,9 +28,10 @@ namespace CodeBrix.Audio.MusicGeneration;
 /// music.Play();
 /// </code>
 /// <para>
-/// WHAT THAT PLAYS is a piece of MIDI embedded in this library, voiced automatically through the
-/// registered instruments, looping at a bar line when it reaches the end. It is a RECORDING of what
-/// a model once wrote, not a model, and it plays the same piece every time - which is exactly what
+/// WHAT THAT PLAYS is a set of original MIDI pieces embedded in this library, voiced automatically
+/// through the registered instruments, one whole piece after another at a bar line, in a shuffled
+/// order with no piece repeating until all of them have played. It is a REPLAY, not a model - which
+/// is exactly what
 /// <see cref="ActiveSource"/> says, so nobody ever ships an application believing a model is
 /// playing when it is not. Naming a generator in the options is what plays a model.
 /// </para>

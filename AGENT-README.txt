@@ -36,17 +36,20 @@ instruments an application uses is the application's decision. You already have
 the General MIDI library through the dependencies below, so unless you want a
 different one, that first line is the whole of it. See "INSTALLATION".
 
-WHAT THOSE TWO LINES PLAY is a piece of MIDI embedded in this package, voiced
-automatically. It is a RECORDING of what a model once wrote - not a model - and
-it plays the same piece every time. music.ActiveSource says so outright, so no
-application ever ships believing a model is playing when it is not. See "THE
-MUSIC IN THE PACKAGE, AND THE THREE NEXT STEPS".
+WHAT THOSE TWO LINES PLAY is a set of original MIDI cues embedded in this
+package, voiced automatically, in a SHUFFLED order: no cue repeats until all of
+them have played. It is a REPLAY of music already written - not a model.
+music.ActiveSource says so outright, so no application ever ships believing a
+model is playing when it is not. See "THE MUSIC IN THE PACKAGE, AND THE THREE
+NEXT STEPS".
 
 THE MUSIC DOES NOT STOP. When a generator reaches the end of what it was
 writing, the same generator is asked to carry on and the next segment is placed
-at the next BAR LINE; for the embedded replays that means they loop. Ask for
-something different while it is playing with FollowUp(), and it takes over at a
-safe bar line after the new pre-roll is ready. See "THE LIFE OF A STREAM".
+at the next BAR LINE; for the embedded replays that means the next pass - for
+the default, the next cue of its shuffle; for any other replay, its piece again.
+Ask for something different while it is playing with FollowUp(), and it takes
+over at a safe bar line after the new pre-roll is ready. See "THE LIFE OF A
+STREAM".
 
 OR RENDER IT TO A FILE INSTEAD - the second first-class way to use this package,
 and the same music either way:
@@ -275,17 +278,47 @@ honour a continuation and nothing else.
 THE MUSIC IN THE PACKAGE, AND THE THREE NEXT STEPS
 ================================================================================
 THIS IS WHAT PLAYS WHEN NOTHING IS SPECIFIED, and it is worth being plain about
-what it is. Four pieces of music ship inside the assembly and four REPLAY
-generators play them. They are recordings of what music models once wrote,
-generated for this package and stored as a few kilobytes of notes each. They are
-not models: they play the same piece every time, and the longest of them is a
-couple of minutes that then loops.
+what it is. Ten original MIDI cues and two short ABC tunes ship inside the
+assembly, and REPLAY generators play them. They are not models: a replay plays
+music that is already written.
 
-    EmbeddedReplay.Midi        the default - the piece that plays when no
-                               generator has been named
-    EmbeddedReplay.MidiSecond  a second, sparser piece
+    EmbeddedReplay.Midi        THE DEFAULT - what plays when no generator has
+                               been named: the ten cues, SHUFFLED
+    EmbeddedReplay.TheRopeReachesTheWindow     one cue, on its own
+    EmbeddedReplay.AWayThroughTheSmoke         one cue, on its own
+    EmbeddedReplay.TheBoatIsStillWaiting       one cue, on its own
+    EmbeddedReplay.AcrossTheCollapsingBridge   one cue, on its own
+    EmbeddedReplay.RunningTowardTheLight       one cue, on its own
+    EmbeddedReplay.TheLastDoorOpens            one cue, on its own
+    EmbeddedReplay.EveryoneOnTheOtherSide      one cue, on its own
+    EmbeddedReplay.ASignalFromTheHelicopter    one cue, on its own
+    EmbeddedReplay.OutOfTheFlood               one cue, on its own
+    EmbeddedReplay.SafeBeyondTheSearchlights   one cue, on its own
     EmbeddedReplay.Abc         a two-voice waltz written in ABC notation
     EmbeddedReplay.AbcSecond   a slow single-voice air
+
+THE DEFAULT IS SHUFFLED. Each cue is about ten minutes long, and each pass of
+the default plays one whole cue. The cues come out of a shuffled bag: NO CUE
+REPEATS UNTIL ALL TEN HAVE PLAYED, and when the bag is refilled its first cue is
+never the one that just finished, so no cue ever plays twice in a row. The order
+is different every time the process starts. EACH CUE IS ALSO REACHABLE BY ITS
+OWN NAME (EmbeddedReplay.Cues lists the ten), and a cue asked for by name is an
+ordinary replay of that one cue: it never shuffles, and every pass of it is the
+same. The reported name of the default is EmbeddedReplay.Midi whichever cue is
+playing.
+
+THE CUES ARE WRITTEN FOR A GENERAL MIDI INSTRUMENT LIBRARY: eight parts,
+General MIDI drums among them, with their own tempo changes, volume, expression
+and pan. A FluidR3Gm SoundFont gives the intended timbres; "ModestSynthGm",
+which this package brings with it, covers every instrument they use.
+
+THE DEFAULT MUSIC BELONGS TO THIS PACKAGE'S VERSION. An application that
+references only the SkyTNT or MuPT package
+(CodeBrix.Audio.MusicGeneration.SkyTNT.ApacheLicenseForever,
+CodeBrix.Audio.MusicGeneration.MuPT.ApacheLicenseForever) and does not name
+this package itself gets whatever version of this package that package was
+built against - which may be an older one, with different default music. To
+get the current default, reference this package directly as well.
 
 They exist so that the plumbing can be proved - playback, voicing, the streaming
 lifecycle, rendering to a file - without a model, a download or any
@@ -896,6 +929,10 @@ WRITE YOUR OWN, AND REGISTER IT - a rendition is data, not code:
     mine.PercussionGain = 0.7F;
     mine.MasterGain = 1.0F;
     mine.Register();
+
+A TEST SUITE that registers renditions starts each test from the built-ins with
+MusicRenditionRegistry.ResetForTesting() - see "MusicGeneratorRegistry -
+naming generators". Production code must not call it.
 
 WHY A PART SOUNDS AS IT DOES. ActiveSource.Voicing carries one PartVoicing per
 part - its channel, its program, its gain, its layer, where the choice came
@@ -1701,6 +1738,7 @@ MusicGeneratorRegistry - naming generators
     static IReadOnlyList<string> RegisteredNames
     static bool IsRegistered(string name)
     static IMusicGenerator Resolve(string name)
+    static void ResetForTesting()                      // YOUR TEST SUITE ONLY
 
 REGISTERING IS NOT SPECIFYING. A generator plays when it has been registered AND
 its name asked for. WITH NOTHING SPECIFIED - null, empty or blank - THE EMBEDDED
@@ -1709,19 +1747,49 @@ settable default and no first-one-registered-wins. (That is deliberately unlike
 the INSTRUMENT library registry, where the first one registered IS the default:
 an instrument library is a sound, and a generator could be mistaken for a model.)
 
-The four built-in replays are always there: they appear in Registered ahead of
-anything you register, and nothing else may take one of their names. Registering
-the same generator instance twice is a no-op; a different generator under a
-taken name is an error; a name that is not registered is an error listing what
-is.
+The built-in replays are always there: they appear in Registered ahead of
+anything you register, in the order EmbeddedReplay.Names lists them, and nothing
+else may take one of their names. Registering the same generator instance twice
+is a no-op; a different generator under a taken name is an error; a name that is
+not registered is an error listing what is.
+
+RESETTING, FOR YOUR TEST SUITE. The registry is process-wide state, so test
+classes that register generators see each other's work.
+MusicGeneratorRegistry.ResetForTesting() removes everything your code
+registered and replaces every built-in replay with a freshly built one with
+nothing loaded; MusicRenditionRegistry.ResetForTesting() does the same for the
+renditions. Call them from a test's constructor, and keep such tests in one
+non-parallel test collection. PRODUCTION CODE MUST NOT CALL EITHER: they throw
+away every registration the application made.
 
 ReplayMusicGenerator and EmbeddedReplay
 --------------------------------------------------------------------------------
-    EmbeddedReplay.Midi          "EmbeddedReplayMidi"        the default
-    EmbeddedReplay.MidiSecond    "EmbeddedReplayMidiSecond"
+    EmbeddedReplay.Midi          "EmbeddedReplayMidi"     the default, shuffled
+    EmbeddedReplay.TheRopeReachesTheWindow
+                                 "EmbeddedReplayTheRopeReachesTheWindow"
+    EmbeddedReplay.AWayThroughTheSmoke
+                                 "EmbeddedReplayAWayThroughTheSmoke"
+    EmbeddedReplay.TheBoatIsStillWaiting
+                                 "EmbeddedReplayTheBoatIsStillWaiting"
+    EmbeddedReplay.AcrossTheCollapsingBridge
+                                 "EmbeddedReplayAcrossTheCollapsingBridge"
+    EmbeddedReplay.RunningTowardTheLight
+                                 "EmbeddedReplayRunningTowardTheLight"
+    EmbeddedReplay.TheLastDoorOpens
+                                 "EmbeddedReplayTheLastDoorOpens"
+    EmbeddedReplay.EveryoneOnTheOtherSide
+                                 "EmbeddedReplayEveryoneOnTheOtherSide"
+    EmbeddedReplay.ASignalFromTheHelicopter
+                                 "EmbeddedReplayASignalFromTheHelicopter"
+    EmbeddedReplay.OutOfTheFlood "EmbeddedReplayOutOfTheFlood"
+    EmbeddedReplay.SafeBeyondTheSearchlights
+                                 "EmbeddedReplaySafeBeyondTheSearchlights"
     EmbeddedReplay.Abc           "EmbeddedReplayAbc"
     EmbeddedReplay.AbcSecond     "EmbeddedReplayAbcSecond"
-    EmbeddedReplay.Names, EmbeddedReplay.IsReservedName(name)
+    EmbeddedReplay.Names   all thirteen: Midi, the ten cues in order, Abc,
+                           AbcSecond
+    EmbeddedReplay.Cues    the ten cue names, in the same order
+    EmbeddedReplay.IsReservedName(name)
 
     ReplayMusicGenerator.FromMidiFile(name, path)
     ReplayMusicGenerator.FromMidiStream(name, stream)
@@ -1736,6 +1804,13 @@ ONE CALL IS ONE PASS. The pass is as long as the music ROUNDED UP TO A WHOLE
 BAR, and its last item says the whole of that length has settled - trailing
 silence included - so the pass after it starts on a bar line. LOOPING IS NOT
 DONE HERE: asking again, with a continuation, is the next pass.
+
+THE DEFAULT PLAYS A DIFFERENT CUE ON EACH PASS. EmbeddedReplay.Midi draws the
+next cue from its shuffled bag when a pass starts, prepares it the first time it
+comes up and keeps it from then on. IsLoaded is true once any cue has been
+prepared; PreloadAsync prepares the cue the next pass will play; Release() lets
+every prepared cue go but keeps the place in the shuffle. The ten named cues are
+ordinary single-piece replays.
 
 A replay honours a CONTINUATION and nothing else, because a piece that is
 already written cannot be made to be in A minor or to last four minutes.
@@ -1948,7 +2023,13 @@ A GENERATOR NAME NOBODY REGISTERED - InvalidOperationException, listing what is
 registered so that a typo is obvious:
 
     No music generator named 'MyGenrator' is registered. Registered generators:
-    EmbeddedReplayMidi, EmbeddedReplayMidiSecond, EmbeddedReplayAbc,
+    EmbeddedReplayMidi, EmbeddedReplayTheRopeReachesTheWindow,
+    EmbeddedReplayAWayThroughTheSmoke, EmbeddedReplayTheBoatIsStillWaiting,
+    EmbeddedReplayAcrossTheCollapsingBridge,
+    EmbeddedReplayRunningTowardTheLight, EmbeddedReplayTheLastDoorOpens,
+    EmbeddedReplayEveryoneOnTheOtherSide,
+    EmbeddedReplayASignalFromTheHelicopter, EmbeddedReplayOutOfTheFlood,
+    EmbeddedReplaySafeBeyondTheSearchlights, EmbeddedReplayAbc,
     EmbeddedReplayAbcSecond, MyGenerator. Register it before asking for it by
     name.
 
@@ -1956,7 +2037,14 @@ A NAME THAT BELONGS TO A BUILT-IN REPLAY, when registering:
 
     The name 'EmbeddedReplayMidi' belongs to a replay generator that is built
     in, so another generator cannot be registered under it. The built-in names
-    are: EmbeddedReplayMidi, EmbeddedReplayMidiSecond, EmbeddedReplayAbc,
+    are:
+    EmbeddedReplayMidi, EmbeddedReplayTheRopeReachesTheWindow,
+    EmbeddedReplayAWayThroughTheSmoke, EmbeddedReplayTheBoatIsStillWaiting,
+    EmbeddedReplayAcrossTheCollapsingBridge,
+    EmbeddedReplayRunningTowardTheLight, EmbeddedReplayTheLastDoorOpens,
+    EmbeddedReplayEveryoneOnTheOtherSide,
+    EmbeddedReplayASignalFromTheHelicopter, EmbeddedReplayOutOfTheFlood,
+    EmbeddedReplaySafeBeyondTheSearchlights, EmbeddedReplayAbc,
     EmbeddedReplayAbcSecond.
 
 A NAME ANOTHER GENERATOR ALREADY HAS (registering the SAME instance again is a
@@ -2476,9 +2564,13 @@ Every feature area above is exercised by a test file:
   MusicRequestTests.cs                 the request and its parts
   GeneratedMusicEventTests.cs          events, settled ticks and horizon-only
                                        items
-  ReplayMusicGeneratorTests.cs         the four built-ins, ticks, order, the
+  ReplayMusicGeneratorTests.cs         the built-ins, ticks, order, the
                                        settled tick, two identical passes,
                                        loading and release
+  EmbeddedReplayTests.cs               the ten cues, the shuffled default, and
+                                       each cue by its own name
+  ShuffledCueOrderTests.cs             the shuffle: every cue once per bag, and
+                                       never the same cue twice in a row
   ReplayPacingTests.cs                 pacing above and below real time, pacing
                                        switched off, and cancellation
   ConsumerReplayTests.cs               your own MIDI and your own ABC, and what
@@ -2651,13 +2743,18 @@ QUICK REFERENCE CARD
     new MusicRendition(name, description).Voices.Add(
         new RenditionVoice(GeneralMidiProgram.Celesta, 0.9F));
     MusicRenditionRegistry.Register(rendition) | .Resolve(name) | .RegisteredNames
+    MusicRenditionRegistry.ResetForTesting()            // your test suite only
 
     MusicGeneratorRegistry.Resolve(null)                // the embedded replay
     MusicGeneratorRegistry.Resolve("MyGenerator")       // by name
     MusicGeneratorRegistry.Register(generator)          // loads nothing
     MusicGeneratorRegistry.RegisteredNames              // built-ins first
+    MusicGeneratorRegistry.ResetForTesting()            // your test suite only
 
-    EmbeddedReplay.Midi | MidiSecond | Abc | AbcSecond  // the reserved names
+    EmbeddedReplay.Midi                                 // default, shuffled
+    EmbeddedReplay.Cues                                 // each cue, by name
+    EmbeddedReplay.Abc | AbcSecond                      // the two ABC tunes
+    EmbeddedReplay.Names | .IsReservedName(name)        // all reserved names
 
     ReplayMusicGenerator.FromMidiFile(name, path)
     ReplayMusicGenerator.FromMidiStream(name, stream)

@@ -74,8 +74,9 @@ being written, voices those events through a CodeBrix.Audio instrument library,
 and either plays them while they are still being generated or renders them to an
 audio file. A generator is "a thing that produces music" - deliberately not "a
 model file", because a generator may be backed by no model at all, by one, or by
-two. Four replay generators over embedded pieces are built in, so an application
-makes music with no model and no download.
+two. Replay generators over embedded pieces are built in - a shuffled default
+over ten MIDI cues, each cue by its own name, and two ABC tunes - so an
+application makes music with no model and no download.
 
 
 REPOSITORY LAYOUT
@@ -98,7 +99,8 @@ REPOSITORY LAYOUT
       MusicSegmentKind.cs          what kind of segment is generating now
       MusicDeliveryMode.cs         streaming, or a whole segment at a time
       MusicGenerationException.cs  the base of this library's own errors
-      EmbeddedMusic/               the four pieces that ship inside the assembly
+      EmbeddedMusic/               the ten MIDI cues and two ABC tunes that ship
+                                   inside the assembly
       Generation/                  the request, the generated-event type, the
                                    capability declaration and its checker
       Replay/                      the replay generator and the built-in names
@@ -343,8 +345,9 @@ build time. There is no literal <Version> to bump. GeneratePackageOnBuild is
 true, so every build produces a fresh .nupkg in bin/<configuration>/.
 
 The nupkg contains the assembly, its XML documentation, icon-codebrix-128.png,
-README.md, AGENT-README.txt and THIRD-PARTY-NOTICES.txt - and the four embedded
-pieces of music, which are inside the assembly rather than beside it.
+README.md, AGENT-README.txt and THIRD-PARTY-NOTICES.txt - and the embedded music
+(ten MIDI cues, two ABC tunes), which is inside the assembly rather than beside
+it.
 
 BEFORE A PUBLISH, unzip the Release .nupkg and read the nuspec's dependency
 group with your own eyes. It must list exactly the three packages named at the
@@ -396,11 +399,23 @@ ran the listening sessions produced, raw text and finished tune side by side,
 and MuPTSmtAbcTests turns every raw file into its tune character for character.
 Change the port and those tests say so.
 
-The four pieces of music in src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic are
-the OUTPUT of Apache-2.0 models, generated locally by the owner of this
-repository - not third-party recordings or transcriptions.
-THIRD-PARTY-NOTICES.txt states this deliberately and records the recipe for the
-default piece.
+The music in src/CodeBrix.Audio.MusicGeneration/EmbeddedMusic is not third-party
+content, and THIRD-PARTY-NOTICES.txt says what it is, deliberately and in one
+place: the ten MIDI cues in one sentence, and the two ABC tunes as the OUTPUT
+of the Apache-2.0 MuPT model, generated locally by the owner of this repository
+- not third-party recordings or transcriptions.
+
+THE DEFAULT REPLAY SHUFFLES. EmbeddedReplay.Midi plays one whole cue per pass,
+drawn from Internal/ShuffledCueOrder.cs: a shuffled bag, refilled so that its
+first cue is never the one that just finished. Its Random is unseeded in the
+library; tests build it through EmbeddedReplay.CreateDefault(Random) with a
+seed. Each cue is also a reserved name of its own, an ordinary single-piece
+replay that never shuffles. The cues are written for a General MIDI instrument
+library (FluidR3Gm gives the intended timbres; ModestSynthGm covers every
+instrument they use). Adding or removing a cue means the csproj's
+EmbeddedResource list, Internal/EmbeddedMusicResources.cs, the reserved names on
+Replay/EmbeddedReplay.cs, and the exact name lists the registry tests and
+AGENT-README.txt spell out.
 
 
 NOTES

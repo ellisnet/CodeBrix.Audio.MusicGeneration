@@ -4,19 +4,27 @@ using System.IO;
 namespace CodeBrix.Audio.MusicGeneration.Internal;
 
 /// <summary>
-/// The four pieces of music that ship inside the assembly, and the one place their manifest names
-/// are written down.
+/// The music that ships inside the assembly - ten MIDI cues and two ABC tunes - and the one place
+/// their manifest names are written down.
 /// </summary>
 internal static class EmbeddedMusicResources
 {
     /// <summary>The manifest-name prefix every embedded piece shares.</summary>
     public const string Prefix = "CodeBrix.Audio.MusicGeneration.EmbeddedMusic.";
 
-    /// <summary>The longer dense piece: the music that plays when nothing has been specified.</summary>
-    public const string DefaultMidi = Prefix + "skytnt-fp32-dense-long-seed20260918-2000ev.mid";
-
-    /// <summary>The second embedded MIDI piece, available by name.</summary>
-    public const string SecondMidi = Prefix + "skytnt-fp32-ordinary.mid";
+    private static readonly string[] MidiCueNames =
+    [
+        Prefix + "TheRopeReachesTheWindow.mid",
+        Prefix + "AWayThroughTheSmoke.mid",
+        Prefix + "TheBoatIsStillWaiting.mid",
+        Prefix + "AcrossTheCollapsingBridge.mid",
+        Prefix + "RunningTowardTheLight.mid",
+        Prefix + "TheLastDoorOpens.mid",
+        Prefix + "EveryoneOnTheOtherSide.mid",
+        Prefix + "ASignalFromTheHelicopter.mid",
+        Prefix + "OutOfTheFlood.mid",
+        Prefix + "SafeBeyondTheSearchlights.mid"
+    ];
 
     /// <summary>The two-voice waltz: the embedded piece in ABC notation.</summary>
     public const string DefaultAbc = Prefix + "mupt-q8_0-duet-Am-waltz-seed29.abc";
@@ -24,7 +32,13 @@ internal static class EmbeddedMusicResources
     /// <summary>The second embedded ABC piece, available by name.</summary>
     public const string SecondAbc = Prefix + "mupt-q8_0-air-Dmix-seed11.abc";
 
-    private static readonly string[] AllNames = [DefaultMidi, SecondMidi, DefaultAbc, SecondAbc];
+    private static readonly string[] AllNames = [.. MidiCueNames, DefaultAbc, SecondAbc];
+
+    /// <summary>
+    /// The ten embedded MIDI cues, by manifest name, in the order <see cref="Replay.EmbeddedReplay"/>
+    /// lists their reserved names. The default replay shuffles over all of them.
+    /// </summary>
+    public static IReadOnlyList<string> MidiCues => MidiCueNames;
 
     /// <summary>Every embedded piece, by manifest name.</summary>
     public static IReadOnlyList<string> All => AllNames;

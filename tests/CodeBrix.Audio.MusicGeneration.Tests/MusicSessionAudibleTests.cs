@@ -96,7 +96,7 @@ public class MusicSessionAudibleTests
         var sourceBeforeTheFollowUp = music.ActiveSource.GeneratorName;
 
         // ... and then ask for something else while it is playing
-        music.FollowUp(new MusicRequest(), EmbeddedReplay.MidiSecond);
+        music.FollowUp(new MusicRequest(), EmbeddedReplay.OutOfTheFlood);
         listening.Wait(HowLongToListenAfterAFollowUp, TestContext.Current.CancellationToken);
 
         var afterTheFollowUp = music.Diagnostics;
@@ -104,7 +104,7 @@ public class MusicSessionAudibleTests
         //Assert - the music went round at least once, then changed to the other piece
         afterTheLoop.SegmentCount.Should().BeGreaterThan(1);
         sourceBeforeTheFollowUp.Should().Be(EmbeddedReplay.Abc);
-        music.ActiveSource.GeneratorName.Should().Be(EmbeddedReplay.MidiSecond);
+        music.ActiveSource.GeneratorName.Should().Be(EmbeddedReplay.OutOfTheFlood);
         afterTheFollowUp.SegmentCount.Should().BeGreaterThan(afterTheLoop.SegmentCount);
 
         // Nothing arrived behind the play head, at the loop seam or at the prompt change: an

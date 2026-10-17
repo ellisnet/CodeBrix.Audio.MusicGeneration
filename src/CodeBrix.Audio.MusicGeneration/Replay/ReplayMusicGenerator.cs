@@ -18,8 +18,9 @@ namespace CodeBrix.Audio.MusicGeneration.Replay;
 /// </summary>
 /// <remarks>
 /// <para>
-/// FOUR OF THESE ARE BUILT IN, over pieces that ship inside this library, and are always resolvable
-/// by the names on <see cref="EmbeddedReplay"/>. A consumer builds their own over their own music
+/// SOME OF THESE ARE BUILT IN, over pieces that ship inside this library, and are always resolvable
+/// by the names on <see cref="EmbeddedReplay"/>. The default one, <see cref="EmbeddedReplay.Midi"/>,
+/// plays a different cue on every pass, drawn from a shuffled set of embedded cues. A consumer builds their own over their own music
 /// with <see cref="FromMidiFile"/>, <see cref="FromMidiStream"/>, <see cref="FromMidiEvents"/> or
 /// <see cref="FromAbc"/>, registers it under a name of their own, and asks for it by that name.
 /// </para>
@@ -55,18 +56,28 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
     public const double DefaultPacingRate = 8.0;
 
     private readonly object gate = new object();
-    private readonly Func<int, ReplayPiece> build;
+    private readonly Func<int, ReplayPiece>[] builds;
+    private readonly ReplayPiece[] pieces;
+    private readonly ShuffledCueOrder cueOrder;
 
-    private ReplayPiece piece;
     private double pacingRate = DefaultPacingRate;
     private TimeProvider timeProvider = TimeProvider.System;
     private string description;
 
     private ReplayMusicGenerator(string name, string description, Func<int, ReplayPiece> build)
+        : this(name, description, [build], null)
+    {
+    }
+
+    // More than one build is a set of cues, one per pass, in the order the cue order draws them.
+    private ReplayMusicGenerator(string name, string description, Func<int, ReplayPiece>[] builds,
+        ShuffledCueOrder cueOrder)
     {
         Name = name;
         this.description = description;
-        this.build = build;
+        this.builds = builds;
+        this.cueOrder = cueOrder;
+        pieces = new ReplayPiece[builds.Length];
     }
 
     /// <inheritdoc />
@@ -96,11 +107,27 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
 
     /// <summary>
     /// Whether the piece has been read and prepared. A replay prepares its music for one tick
-    /// resolution at a time: asking for a different one prepares it again.
+    /// resolution at a time: asking for a different one prepares it again. The shuffled default,
+    /// <see cref="EmbeddedReplay.Midi"/>, prepares each of its cues the first time it plays it and
+    /// keeps it; it is loaded once any cue has been prepared.
     /// </summary>
     public bool IsLoaded
     {
-        get { lock (gate) { return piece != null; } }
+        get
+        {
+            lock (gate)
+            {
+                foreach (var prepared in pieces)
+                {
+                    if (prepared != null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
     }
 
     /// <summary>
@@ -243,21 +270,29 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The shuffled default, <see cref="EmbeddedReplay.Midi"/>, prepares the cue its next pass will
+    /// play; the rest are prepared as they come up.
+    /// </remarks>
     public Task PreloadAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return Task.Run(
-            () => Load(MusicRequest.DefaultTicksPerQuarterNote, cancellationToken),
+            () => Load(UpcomingCue(), MusicRequest.DefaultTicksPerQuarterNote, cancellationToken),
             cancellationToken);
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Every prepared piece is let go - for the shuffled default, every prepared cue. Where the
+    /// shuffle had got to is kept, so releasing never makes a cue play twice in a row.
+    /// </remarks>
     public void Release()
     {
         lock (gate)
         {
-            piece = null;
+            Array.Clear(pieces);
         }
     }
 
@@ -294,24 +329,82 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
             : ReplayPieceBuilder.FromMidiBytes(EmbeddedMusicResources.Read(resourceName), ticks, what));
     }
 
-    /// <summary>How long one pass lasts at a tick resolution, at the music's own tempo.</summary>
+    /// <summary>
+    /// Builds the shuffled replay over a set of embedded MIDI cues: each pass plays one whole cue,
+    /// drawn from a shuffled bag, so no cue repeats until all of them have played and no cue plays
+    /// twice in a row. Internal: it is the built-in default, reached through
+    /// <see cref="MusicGeneratorRegistry"/>.
+    /// </summary>
+    /// <param name="name">The reserved name of the built-in generator.</param>
+    /// <param name="description">What it plays.</param>
+    /// <param name="resourceNames">The manifest names of the embedded MIDI cues.</param>
+    /// <param name="random">
+    /// Where the shuffles come from: unseeded in the library, seeded by a test that needs a
+    /// reproducible order.
+    /// </param>
+    /// <returns>The generator.</returns>
+    internal static ReplayMusicGenerator FromEmbeddedMidiCues(string name, string description,
+        IReadOnlyList<string> resourceNames, Random random)
+    {
+        var builds = new Func<int, ReplayPiece>[resourceNames.Count];
+
+        for (var i = 0; i < builds.Length; i++)
+        {
+            var resourceName = resourceNames[i];
+            var what = $"The music embedded in this library as '{resourceName}'";
+
+            builds[i] = ticks =>
+                ReplayPieceBuilder.FromMidiBytes(EmbeddedMusicResources.Read(resourceName), ticks, what);
+        }
+
+        return new ReplayMusicGenerator(name, description, builds,
+            new ShuffledCueOrder(builds.Length, random));
+    }
+
+    /// <summary>
+    /// How many cues this generator plays: 1 for an ordinary replay, more for the shuffled default.
+    /// </summary>
+    internal int CueCount => builds.Length;
+
+    /// <summary>
+    /// The cue the next pass will play, without drawing it: always 0 for an ordinary replay.
+    /// </summary>
+    internal int UpcomingCue() => cueOrder?.Peek() ?? 0;
+
+    /// <summary>
+    /// How long one pass lasts at a tick resolution, at the music's own tempo. For the shuffled
+    /// default it is the pass the generator WILL play next - the cue it has not yet drawn.
+    /// </summary>
     /// <param name="ticksPerQuarterNote">The resolution the pass would be generated at.</param>
     /// <returns>The length of one pass.</returns>
     /// <remarks>Loads the piece if it is not loaded already.</remarks>
     internal TimeSpan PassDuration(int ticksPerQuarterNote) =>
-        Load(ticksPerQuarterNote, CancellationToken.None).Duration;
+        Load(UpcomingCue(), ticksPerQuarterNote, CancellationToken.None).Duration;
 
-    /// <summary>How long one pass is in ticks, rounded up to a whole bar.</summary>
+    /// <summary>
+    /// How long one pass is in ticks, rounded up to a whole bar. For the shuffled default it is the
+    /// pass the generator WILL play next - the cue it has not yet drawn.
+    /// </summary>
     /// <param name="ticksPerQuarterNote">The resolution the pass would be generated at.</param>
     /// <returns>The length of one pass, in ticks.</returns>
     /// <remarks>Loads the piece if it is not loaded already.</remarks>
     internal long PassTicks(int ticksPerQuarterNote) =>
-        Load(ticksPerQuarterNote, CancellationToken.None).TotalTicks;
+        Load(UpcomingCue(), ticksPerQuarterNote, CancellationToken.None).TotalTicks;
+
+    /// <summary>A cue prepared at a tick resolution, for tests that read a cue's metadata.</summary>
+    /// <param name="cue">The cue's number.</param>
+    /// <param name="ticksPerQuarterNote">The resolution to prepare it at.</param>
+    /// <returns>The prepared cue.</returns>
+    internal ReplayPiece PieceOfCue(int cue, int ticksPerQuarterNote) =>
+        Load(cue, ticksPerQuarterNote, CancellationToken.None);
 
     private async IAsyncEnumerable<GeneratedMusicEvent> Generate(int ticksPerQuarterNote, bool pace,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var prepared = Load(ticksPerQuarterNote, cancellationToken);
+        // A pass is one cue. The draw happens when the pass starts playing, not when it is asked
+        // for, so a pass that is asked for but never played does not use up a cue.
+        var cue = cueOrder?.Next() ?? 0;
+        var prepared = Load(cue, ticksPerQuarterNote, cancellationToken);
 
         double rate;
         TimeProvider clock;
@@ -349,13 +442,14 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
         }
     }
 
-    private ReplayPiece Load(int ticksPerQuarterNote, CancellationToken cancellationToken)
+    private ReplayPiece Load(int cue, int ticksPerQuarterNote, CancellationToken cancellationToken)
     {
         lock (gate)
         {
-            if (piece != null && piece.TicksPerQuarterNote == ticksPerQuarterNote)
+            var cached = pieces[cue];
+            if (cached != null && cached.TicksPerQuarterNote == ticksPerQuarterNote)
             {
-                return piece;
+                return cached;
             }
         }
 
@@ -363,11 +457,11 @@ public sealed class ReplayMusicGenerator : IMusicGenerator
 
         // Built outside the lock: reading and converting a piece is the slow part, and a generator
         // is asked for one segment at a time.
-        var built = build(ticksPerQuarterNote);
+        var built = builds[cue](ticksPerQuarterNote);
 
         lock (gate)
         {
-            piece = built;
+            pieces[cue] = built;
         }
 
         return built;

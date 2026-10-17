@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using CodeBrix.Audio.MusicGeneration.Replay;
 using SilverAssertions;
 using SilverAssertions.Collections;
@@ -20,14 +21,37 @@ public class MusicGeneratorRegistryTests
     public MusicGeneratorRegistryTests() => MusicGeneratorRegistry.ResetForTesting();
 
     [Fact]
-    public void the_four_built_in_replays_are_there_with_no_registration_at_all()
+    public void the_built_in_replays_are_there_with_no_registration_at_all()
         => MusicGeneratorRegistry.RegisteredNames.Should().Equal(
-            EmbeddedReplay.Midi, EmbeddedReplay.MidiSecond,
+            EmbeddedReplay.Midi,
+            EmbeddedReplay.TheRopeReachesTheWindow, EmbeddedReplay.AWayThroughTheSmoke,
+            EmbeddedReplay.TheBoatIsStillWaiting, EmbeddedReplay.AcrossTheCollapsingBridge,
+            EmbeddedReplay.RunningTowardTheLight, EmbeddedReplay.TheLastDoorOpens,
+            EmbeddedReplay.EveryoneOnTheOtherSide, EmbeddedReplay.ASignalFromTheHelicopter,
+            EmbeddedReplay.OutOfTheFlood, EmbeddedReplay.SafeBeyondTheSearchlights,
             EmbeddedReplay.Abc, EmbeddedReplay.AbcSecond);
+
+    [Fact]
+    public void there_are_thirteen_built_in_names_and_ten_of_them_are_cues()
+    {
+        //Assert
+        EmbeddedReplay.Names.Should().HaveCount(13);
+        EmbeddedReplay.Cues.Should().HaveCount(10);
+        EmbeddedReplay.Names.Skip(1).Take(10).Should().Equal(EmbeddedReplay.Cues);
+    }
 
     [Theory]
     [InlineData("EmbeddedReplayMidi")]
-    [InlineData("EmbeddedReplayMidiSecond")]
+    [InlineData("EmbeddedReplayTheRopeReachesTheWindow")]
+    [InlineData("EmbeddedReplayAWayThroughTheSmoke")]
+    [InlineData("EmbeddedReplayTheBoatIsStillWaiting")]
+    [InlineData("EmbeddedReplayAcrossTheCollapsingBridge")]
+    [InlineData("EmbeddedReplayRunningTowardTheLight")]
+    [InlineData("EmbeddedReplayTheLastDoorOpens")]
+    [InlineData("EmbeddedReplayEveryoneOnTheOtherSide")]
+    [InlineData("EmbeddedReplayASignalFromTheHelicopter")]
+    [InlineData("EmbeddedReplayOutOfTheFlood")]
+    [InlineData("EmbeddedReplaySafeBeyondTheSearchlights")]
     [InlineData("EmbeddedReplayAbc")]
     [InlineData("EmbeddedReplayAbcSecond")]
     public void IsRegistered_is_true_for_every_built_in_name(string name)
@@ -72,7 +96,7 @@ public class MusicGeneratorRegistryTests
 
         //Assert
         resolved.Name.Should().Be(EmbeddedReplay.Midi);
-        MusicGeneratorRegistry.Registered.Should().HaveCount(6);
+        MusicGeneratorRegistry.Registered.Should().HaveCount(EmbeddedReplay.Names.Count + 2);
     }
 
     [Fact]
@@ -115,7 +139,11 @@ public class MusicGeneratorRegistryTests
         var thrown = act.Should().Throw<InvalidOperationException>().Which;
         thrown.Message.Should().Be(
             "No music generator named 'SkyTNT' is registered. Registered generators: " +
-            "EmbeddedReplayMidi, EmbeddedReplayMidiSecond, EmbeddedReplayAbc, " +
+"EmbeddedReplayMidi, EmbeddedReplayTheRopeReachesTheWindow, EmbeddedReplayAWayThroughTheSmoke, " +
+            "EmbeddedReplayTheBoatIsStillWaiting, EmbeddedReplayAcrossTheCollapsingBridge, " +
+            "EmbeddedReplayRunningTowardTheLight, EmbeddedReplayTheLastDoorOpens, " +
+            "EmbeddedReplayEveryoneOnTheOtherSide, EmbeddedReplayASignalFromTheHelicopter, " +
+            "EmbeddedReplayOutOfTheFlood, EmbeddedReplaySafeBeyondTheSearchlights, EmbeddedReplayAbc, " +
             "EmbeddedReplayAbcSecond, MuPT. Register it before asking for it by name.");
     }
 
@@ -130,7 +158,7 @@ public class MusicGeneratorRegistryTests
         MusicGeneratorRegistry.Register(muPT);
 
         //Assert
-        MusicGeneratorRegistry.Registered.Should().HaveCount(5);
+        MusicGeneratorRegistry.Registered.Should().HaveCount(EmbeddedReplay.Names.Count + 1);
     }
 
     [Fact]
@@ -171,8 +199,13 @@ public class MusicGeneratorRegistryTests
         var thrown = act.Should().Throw<InvalidOperationException>().Which;
         thrown.Message.Should().Be(
             $"The name '{reserved}' belongs to a replay generator that is built in, so another " +
-            "generator cannot be registered under it. The built-in names are: EmbeddedReplayMidi, " +
-            "EmbeddedReplayMidiSecond, EmbeddedReplayAbc, EmbeddedReplayAbcSecond.");
+            "generator cannot be registered under it. The built-in names are: " +
+            "EmbeddedReplayMidi, EmbeddedReplayTheRopeReachesTheWindow, EmbeddedReplayAWayThroughTheSmoke, " +
+            "EmbeddedReplayTheBoatIsStillWaiting, EmbeddedReplayAcrossTheCollapsingBridge, " +
+            "EmbeddedReplayRunningTowardTheLight, EmbeddedReplayTheLastDoorOpens, " +
+            "EmbeddedReplayEveryoneOnTheOtherSide, EmbeddedReplayASignalFromTheHelicopter, " +
+            "EmbeddedReplayOutOfTheFlood, EmbeddedReplaySafeBeyondTheSearchlights, EmbeddedReplayAbc, " +
+            "EmbeddedReplayAbcSecond.");
     }
 
     [Fact]
@@ -185,7 +218,7 @@ public class MusicGeneratorRegistryTests
         MusicGeneratorRegistry.Register(builtIn);
 
         //Assert
-        MusicGeneratorRegistry.Registered.Should().HaveCount(4);
+        MusicGeneratorRegistry.Registered.Should().HaveCount(EmbeddedReplay.Names.Count);
     }
 
     [Fact]
@@ -232,8 +265,7 @@ public class MusicGeneratorRegistryTests
         var names = MusicGeneratorRegistry.RegisteredNames;
 
         //Assert
-        names.Should().Equal(EmbeddedReplay.Midi, EmbeddedReplay.MidiSecond, EmbeddedReplay.Abc,
-            EmbeddedReplay.AbcSecond, "SkyTNT", "MuPT");
+        names.Should().Equal(EmbeddedReplay.Names.Concat(["SkyTNT", "MuPT"]));
     }
 
     [Fact]
@@ -246,7 +278,7 @@ public class MusicGeneratorRegistryTests
         MusicGeneratorRegistry.ResetForTesting();
 
         //Assert
-        MusicGeneratorRegistry.RegisteredNames.Should().HaveCount(4);
+        MusicGeneratorRegistry.RegisteredNames.Should().HaveCount(EmbeddedReplay.Names.Count);
         MusicGeneratorRegistry.IsRegistered("MuPT").Should().BeFalse();
     }
 
@@ -254,11 +286,11 @@ public class MusicGeneratorRegistryTests
     public void ResetForTesting_hands_out_built_ins_with_nothing_loaded()
     {
         //Arrange
-        var before = MusicGeneratorRegistry.Resolve(EmbeddedReplay.MidiSecond);
+        var before = MusicGeneratorRegistry.Resolve(EmbeddedReplay.OutOfTheFlood);
 
         //Act
         MusicGeneratorRegistry.ResetForTesting();
-        var after = MusicGeneratorRegistry.Resolve(EmbeddedReplay.MidiSecond);
+        var after = MusicGeneratorRegistry.Resolve(EmbeddedReplay.OutOfTheFlood);
 
         //Assert
         after.Should().NotBeSameAs(before);
@@ -266,10 +298,12 @@ public class MusicGeneratorRegistryTests
     }
 
     [Fact]
-    public void IsReservedName_knows_the_four_and_nothing_else()
+    public void IsReservedName_knows_the_built_ins_and_nothing_else()
     {
         //Assert
-        EmbeddedReplay.IsReservedName(EmbeddedReplay.AbcSecond).Should().BeTrue();
+        EmbeddedReplay.Names.Should().OnlyContain(name => EmbeddedReplay.IsReservedName(name));
+        EmbeddedReplay.IsReservedName("EMBEDDEDREPLAYOUTOFTHEFLOOD").Should().BeTrue();
+        EmbeddedReplay.IsReservedName("EmbeddedReplayMidiSecond").Should().BeFalse();
         EmbeddedReplay.IsReservedName("EMBEDDEDREPLAYMIDI").Should().BeTrue();
         EmbeddedReplay.IsReservedName("MuPT").Should().BeFalse();
         EmbeddedReplay.IsReservedName(null).Should().BeFalse();

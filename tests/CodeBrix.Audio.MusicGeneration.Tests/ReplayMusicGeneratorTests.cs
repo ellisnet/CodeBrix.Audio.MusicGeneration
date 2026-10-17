@@ -15,7 +15,7 @@ using Xunit;
 namespace CodeBrix.Audio.MusicGeneration.Tests;
 
 /// <summary>
-/// The four replay generators that ship inside the package, and the contract every generator
+/// The replay generators that ship inside the package, and the contract every generator
 /// keeps: segment-relative ticks at the resolution the request names, tick order, an honest
 /// settled tick, and a pass that ends on a bar line.
 /// </summary>
@@ -25,11 +25,17 @@ public class ReplayMusicGeneratorTests
     /// <summary>Starts every test from freshly built built-ins with nothing loaded.</summary>
     public ReplayMusicGeneratorTests() => MusicGeneratorRegistry.ResetForTesting();
 
-    /// <summary>The four reserved names.</summary>
+    /// <summary>Every reserved name.</summary>
     /// <returns>One name per case.</returns>
-    public static TheoryData<string> BuiltInNames() =>
-        new TheoryData<string>(EmbeddedReplay.Midi, EmbeddedReplay.MidiSecond,
-            EmbeddedReplay.Abc, EmbeddedReplay.AbcSecond);
+    public static TheoryData<string> BuiltInNames() => new TheoryData<string>(EmbeddedReplay.Names);
+
+    /// <summary>
+    /// Every reserved name but the shuffled default: the replays that play the same piece on every
+    /// pass, so two passes of them can be compared.
+    /// </summary>
+    /// <returns>One name per case.</returns>
+    public static TheoryData<string> SinglePieceNames() =>
+        new TheoryData<string>(EmbeddedReplay.Names.Where(name => name != EmbeddedReplay.Midi));
 
     [Theory]
     [MemberData(nameof(BuiltInNames))]
@@ -115,9 +121,9 @@ public class ReplayMusicGeneratorTests
         //Arrange
         var generator = (ReplayMusicGenerator)MusicGeneratorRegistry.Resolve(name);
 
-        //Act
-        var items = await DrainAsync(generator, 480);
+        //Act - the length is read first: for the shuffled default it is the pass about to play
         var passTicks = generator.PassTicks(480);
+        var items = await DrainAsync(generator, 480);
         var lastSounding = items.Where(item => item.HasEvent)
             .Select(item => item.Event is NoteOnEvent note
                 ? note.AbsoluteTime + note.NoteLength
@@ -130,7 +136,7 @@ public class ReplayMusicGeneratorTests
     }
 
     [Theory]
-    [MemberData(nameof(BuiltInNames))]
+    [MemberData(nameof(SinglePieceNames))]
     public async Task a_second_pass_is_identical_to_the_first(string name)
     {
         //Arrange
@@ -145,7 +151,7 @@ public class ReplayMusicGeneratorTests
     }
 
     [Theory]
-    [MemberData(nameof(BuiltInNames))]
+    [MemberData(nameof(SinglePieceNames))]
     public async Task the_ticks_are_at_the_resolution_the_request_named(string name)
     {
         //Arrange
@@ -170,7 +176,7 @@ public class ReplayMusicGeneratorTests
     }
 
     [Theory]
-    [MemberData(nameof(BuiltInNames))]
+    [MemberData(nameof(SinglePieceNames))]
     public async Task a_pass_at_a_coarser_resolution_keeps_every_note(string name)
     {
         //Arrange

@@ -10,7 +10,7 @@ public enum EndOfPiecePolicy
     /// <summary>
     /// The music carries on: the same generator is asked for the next segment, with the music so
     /// far in view, and that segment is placed at the next bar line. For the embedded replay - which
-    /// has one piece and no imagination - that is a loop.
+    /// has no imagination - that is the next of its pieces, in its shuffled order.
     /// </summary>
     KeepGenerating = 0,
 

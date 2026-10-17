@@ -97,7 +97,8 @@ public class LongRenderTests
         wav.Ending.Should().Be(RenderEnding.Fade);
         wav.FadeLength.Should().Be(MusicFade.DefaultLength);
         wav.FadeCurve.Should().Be(MusicFade.DefaultCurve);
-        wav.SegmentCount.Should().BeGreaterThanOrEqualTo(3, "the embedded piece is about 2:05 long");
+        wav.SegmentCount.Should().BeGreaterThanOrEqualTo(1,
+            "each embedded cue is about ten minutes long, so the render ends inside the first");
         wav.Source.IsReplay.Should().BeTrue();
         wav.Source.InstrumentLibraryName.Should().Be(GeneralMidiInstrumentLibrary.LibraryName);
 

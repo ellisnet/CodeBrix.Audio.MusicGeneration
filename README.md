@@ -28,7 +28,7 @@ To hear anything, an application registers an instrument library. This library r
 * Music that arrives while it is still being written - MIDI events released one at a time, each carrying the point the music has settled to, ready to be played or recorded as they appear
 * Playing music as it is generated, through a session that opens the audio device - or that opens none at all, so an application's own mixer pulls the samples
 * A generator model that is not tied to a model file: a generator may be backed by no model, by one, or by two
-* Four pieces of music built into the package, so an application makes music with no model, no download and no configuration
+* Music built into the package - ten original cues played in a shuffled order by default, each also playable by name, and two short tunes in ABC notation - so an application makes music with no model, no download and no configuration
 * Replaying an application's own music - a MIDI file, a MIDI stream, a MIDI event collection, or a tune written in ABC notation - under a name of its own
 * Renditions: how the parts are voiced, as data - an instrument and a level for each part, an optional layer under it, and a set of voicings that were listened to and rated
 * Music that keeps going: the generator is asked to carry on at a bar line, and a follow-up prompt takes over at a bar line while the music plays

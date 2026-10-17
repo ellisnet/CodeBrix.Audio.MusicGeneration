@@ -139,7 +139,11 @@ public class MusicSessionTests
         //Assert
         thrown.Message.Should().Be(
             "No music generator named 'SkyTNT' is registered. Registered generators: " +
-            "EmbeddedReplayMidi, EmbeddedReplayMidiSecond, EmbeddedReplayAbc, " +
+"EmbeddedReplayMidi, EmbeddedReplayTheRopeReachesTheWindow, EmbeddedReplayAWayThroughTheSmoke, " +
+            "EmbeddedReplayTheBoatIsStillWaiting, EmbeddedReplayAcrossTheCollapsingBridge, " +
+            "EmbeddedReplayRunningTowardTheLight, EmbeddedReplayTheLastDoorOpens, " +
+            "EmbeddedReplayEveryoneOnTheOtherSide, EmbeddedReplayASignalFromTheHelicopter, " +
+            "EmbeddedReplayOutOfTheFlood, EmbeddedReplaySafeBeyondTheSearchlights, EmbeddedReplayAbc, " +
             "EmbeddedReplayAbcSecond, MuPT. Register it before asking for it by name.");
     }
 
