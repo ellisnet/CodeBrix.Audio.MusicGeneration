@@ -79,13 +79,13 @@
       CodeBrix.Audio.MitLicenseForever on Windows, Linux and macOS. Naming it here would make that
       choice for every consumer, so this library does not.
     -->
-    <PackageReference Include="CodeBrix.Audio.Core.MitLicenseForever" Version="1.0.269.1270" />
+    <PackageReference Include="CodeBrix.Audio.Core.MitLicenseForever" Version="1.0.283.1382" />
     <!--
       DELIBERATE, although no code in this library ever names a ModestSynth type: one package
       reference has to bring a consumer everything needed to make a sound, and ModestSynth is where
       the General MIDI instrument library lives. Do not remove it as "unused".
     -->
-    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.269.1270" />
+    <PackageReference Include="CodeBrix.Audio.ModestSynth.MitLicenseForever" Version="1.0.283.1382" />
     <PackageReference Include="CodeBrix.Ollama.ModelRunner.MitLicenseForever" Version="1.0.290.840" />
   </ItemGroup>
 
